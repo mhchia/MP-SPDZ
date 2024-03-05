@@ -1,0 +1,101 @@
+from typing import cast
+from Compiler.types import sint, sfix, Matrix, Array
+from Compiler.library import print_ln, print_float_precision, print_ln_to, for_range_opt
+from Compiler.util import if_else
+
+
+# f: bit length of decimal part
+# k: whole bit length of fixed point
+# Ref: https://mp-spdz.readthedocs.io/en/latest/Compiler.html#Compiler.types.sfix.set_precision
+sfix.set_precision(f=16, k=31)
+print_float_precision(4)
+
+NUM_COLUMNS = 2
+INPUT_LENGTH = 10
+
+# Party 0 has columns (id, height). For example,
+# 0 1 2 3
+# 152 160 170 180
+data_id_height = Matrix(NUM_COLUMNS, INPUT_LENGTH, sfix)
+
+# Party 1 has columns (id, weight). For example,
+# 3 0 1 2
+# 50 60 70 80
+data_id_weight = Matrix(NUM_COLUMNS, INPUT_LENGTH, sfix)
+
+party_0 = 0
+party_1 = 1
+
+
+# Read inputs from party 0 into the matrix `data_id_height`
+for i in range(NUM_COLUMNS):
+    for j in range(INPUT_LENGTH):
+        data_id_height[i][j] = sfix.get_input_from(party_0)
+        # Print the inputs for easier debugging
+        data_revealed = cast(sfix, data_id_height[i][j]).reveal_to(party_0)
+        print_ln_to(party_0, 'party %s: data[%s][%s]=%s', party_0, i, j, data_revealed)
+
+
+# Read inputs from party 1
+for i in range(NUM_COLUMNS):
+    for j in range(INPUT_LENGTH):
+        data_id_weight[i][j] = sfix.get_input_from(party_1)
+        # Print the inputs for easier debugging
+        data_revealed = cast(sfix, data_id_weight[i][j]).reveal_to(party_1)
+        print_ln_to(party_1, 'party %s: data[%s][%s]=%s', party_1, i, j, data_revealed)
+
+
+# `weights_sorted_with_height` maps height to the weight in `data_id_weight`.
+# For example, `data_id_height` is
+# 0 1 2 3
+# 152 160 170 180
+#
+# and `data_id_weight` is
+# 3 0 1 2
+# 50 60 70 80
+#
+# Then `weights_sorted_with_height` should be
+# 60 70 80 50
+#
+# If weights_sorted_with_height[i] == 0, then the identity is not found in data_id_weight
+# else, weights_sorted_with_height[i] is the weight of the identity in data_id_weight[0][i]
+weights_sorted_with_height = Array(INPUT_LENGTH, sfix)
+
+# TODO: Use a better algorithm to match the identities. This is O(n^2) right now
+# With a hash table we can do it in O(n).
+for i in range(INPUT_LENGTH):
+    id_in_height = data_id_height[0][i]
+    for j in range(INPUT_LENGTH):
+        id_in_weight = data_id_weight[0][j]
+        # Only try matching if the weight is not already set
+        match = id_in_weight == id_in_height
+        # Only set the weight if it is not already set, i.e. weights_sorted_with_height[i] = 0.
+        # If the weight has been set (not 0), then the weight of the identity is already found
+        # Don't overwrite it.
+        #
+        weights_sorted_with_height[i] = if_else(
+            weights_sorted_with_height[i] == 0,
+            if_else(match, data_id_weight[1][j], 0),
+            weights_sorted_with_height[i]
+        )
+
+
+# BMI for each identity
+bmis = Array(INPUT_LENGTH, sfix)
+
+# Compute BMI for each identity
+for i in range(INPUT_LENGTH):
+    identity: sfix = data_id_height[0][i]
+    height: sfix = data_id_height[1][i]
+    weight = weights_sorted_with_height[i]
+    height_meters = height / 100
+    bmi: sfix = weight / (height_meters * height_meters)
+    bmis[i] = bmi
+
+
+# Compute average BMI
+num_all_bmis = sum(weights_sorted_with_height[i] != 0 for i in range(INPUT_LENGTH))
+sum_all_bmis = sum(bmis[i] for i in range(INPUT_LENGTH))
+res_avg_bmi: sfix = sum_all_bmis / num_all_bmis
+# Reveal the result to both party 0 and part 1
+print_ln('Average BMI: %s', res_avg_bmi.reveal())
