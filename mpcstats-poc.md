@@ -1,5 +1,8 @@
 # MPCStats PoC
 
+## Circuit
+[bmi.mpc](./Programs/Source/bmi.mpc): Data Provider 0 provides (identity, height) and Data Provider 1 provides (identity, weight). The User wants to compute the average BMI of the two datasets by joining them on the identity.
+
 ## Summary
 - Defining mpc computation with python
     - Should be able to support statistics operations easily
