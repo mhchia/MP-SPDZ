@@ -8,13 +8,11 @@ the ones used below into ``Programs/Circuits`` as follows::
 .. _`Bristol Fashion`: https://homes.esat.kuleuven.be/~nsmart/MPC
 
 """
-import math
 
 from Compiler.GC.types import *
 from Compiler.library import function_block, get_tape
 from Compiler import util
 import itertools
-import struct
 
 from enum import Enum
 
@@ -103,7 +101,6 @@ class Circuit:
         #         v.append(flat_res[i])
         #         i += 1
         #     res.append(sbitvec.from_vec(v))
-
         res = list(flat_res)
         return util.untuplify(res)
 

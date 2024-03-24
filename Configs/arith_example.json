@@ -1,0 +1,7 @@
+{
+    "input_from_which_party": [0, null, 1, null],
+    "constants": {
+        "1": 10,
+        "3": 5
+    }
+}
