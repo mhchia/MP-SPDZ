@@ -75,8 +75,8 @@ class Circuit:
 
     """
 
-    def __init__(self, name):
-        self.filename = 'Programs/Circuits/%s.txt' % name
+    def __init__(self, path: str):
+        self.filename = path
         f = open(self.filename)
         self.functions = {}
 
