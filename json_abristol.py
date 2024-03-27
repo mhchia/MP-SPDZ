@@ -1,8 +1,8 @@
 import json
 
 
-filename = 'two_outputs'
-# filename = 'nn_circuit_small'
+# filename = 'two_outputs'
+filename = 'nn_circuit_small'
 # filename = 'circ'
 # filename = 'arith_circuit_example'
 input_filepath = f"{filename}.json"

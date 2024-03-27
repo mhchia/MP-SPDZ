@@ -11,8 +11,8 @@ CMD_RUN_INTERPRETER = f'Scripts/compile-run.py -E semi {CIRCUIT_NAME}'
 # Actual arithmetic circuit to be executed by the MP-SPDZ interpreter above
 # ARITH_CIRCUIT_NAME = 'arith_circuit_example'
 # ARITH_CIRCUIT_NAME = 'circ'
-# ARITH_CIRCUIT_NAME = 'nn_circuit_small'
-ARITH_CIRCUIT_NAME = 'two_outputs'
+ARITH_CIRCUIT_NAME = 'nn_circuit_small'
+# ARITH_CIRCUIT_NAME = 'two_outputs'
 ARITH_CIRCUIT_PATH = f"{ARITH_CIRCUIT_NAME}.txt"
 # Config file defining a input is either a constant or should be read from which party
 CONFIG_PATH = f'Configs/{ARITH_CIRCUIT_NAME}.json'
