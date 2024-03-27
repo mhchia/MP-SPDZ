@@ -15,6 +15,7 @@ from Compiler import util
 import itertools
 
 from enum import Enum
+import json
 
 
 class AGateType(Enum):
@@ -76,8 +77,15 @@ class Circuit:
     """
 
     def __init__(self, path: str):
+        # path might be /path/to/two_outputs.txt
         self.filename = path
         f = open(self.filename)
+        print("!@# path=", path)
+        # this should be /path/to/two_outputs.wire_id_for_inputs.json
+        wire_id_for_inputs_path = path.replace('.txt', '.wire_id_for_inputs.json')
+        with open(wire_id_for_inputs_path, 'r') as f:
+            self.wire_id_for_inputs = json.load(f)
+            print("!@# wire_id_for_inputs=", self.wire_id_for_inputs)
         self.functions = {}
 
     def __call__(self, *inputs):
@@ -105,6 +113,7 @@ class Circuit:
         return util.untuplify(res)
 
     def compile(self, *all_inputs):
+        print("!@# compile: all_inputs=", all_inputs)
         f = open(self.filename)
         lines = iter(f)
         next_line = lambda: next(lines).split()
@@ -128,7 +137,6 @@ class Circuit:
 
         wires = [None] * n_wires
         self.wires = wires
-        i_wire = 0
         # inputs        = (s2, s3)
         # n_input_wires = [64, 64]  # useless for arithc
 
@@ -143,11 +151,12 @@ class Circuit:
         #     s += n
 
         # actual input values passed
+        wire_index_for_inputs = self.wire_id_for_inputs
         inputs = all_inputs[:n_inputs]
-        print("!@# compile: actual inputs=", inputs)
-        print("!@# compile: n_input_wires=", n_input_wires)
+        print("!@# compile: wire_index_for_inputs=", wire_index_for_inputs)
+        print("!@# compile: inputs=               ", inputs)
         # link wires to actual inputs
-        for input, input_wires in zip(inputs, n_input_wires):
+        for wire_index, input_value in zip(wire_index_for_inputs, inputs):
             # No need to check bits
             # assert(len(input) == input_wires)
             # # this for go through all bits, assign bit0 of input0 to wire0, etc.
@@ -155,8 +164,11 @@ class Circuit:
             #     # wires[0] = input_bit[0]
             #     wires[i_wire] = reg
             #     i_wire += 1
-            wires[i_wire] = input
-            i_wire += 1
+            # FIXME:
+            # has mapping from rid to real_value (sint.get_input_from(i))
+            # has mapping from rid to index at `wires`
+            # wires[index] = real_value
+            wires[wire_index] = input_value
 
         # TODO: check n_gates == number of lines for gates
         for i in range(n_gates):
@@ -171,6 +183,7 @@ class Circuit:
                 assert len(line) == 6
                 # inputs = [wires[line[2]], wires[line[3]]]
                 ins = [wires[int(line[2 + i])] for i in range(2)]
+                print("!@# ins=", ins)
                 if gate_type == AGateType.ADD:
                     # I.e. output = input0 + input1
                     wires[int(line[4])] = ins[0] + ins[1]
