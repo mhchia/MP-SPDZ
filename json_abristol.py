@@ -7,7 +7,7 @@ filename = 'nn_circuit_small'
 # filename = 'arith_circuit_example'
 input_filepath = f"{filename}.json"
 output_filepath = f"{filename}.txt"
-node_id_to_wire_index_filepath = f"{filename}.node_id_to_wire_index.json"
+circuit_info_filepath = f"{filename}.circuit_info.json"
 with open(input_filepath) as f:
   data = json.load(f)
 
@@ -52,16 +52,17 @@ anode_outputs: dict[int, str] = {}
 for node in data['nodes']:
   node_id = node['id']
   node_signals = node['signals']
-  node_names = node['names']
+  node_names: list[str] = node['names']
   node_is_const = node['is_const']
   node_const_value = node['const_value']
   anode = ANode(node_id, node_signals, node_names, node_is_const, node_const_value)
   anodes[node_id] = anode
   # Should just use the last one?
-  for node_name in node_names:
-    if "0." in node_name:
-      anode_inputs[node_id] = node_name[2:]
-      anode_outputs[node_id] = node_name[2:]
+  node_name = node_names[-1]
+  # If it's the highest level node, it's an input and output we're interested in
+  if node_name.startswith("0."):
+    anode_inputs[node_id] = node_name[2:]
+    anode_outputs[node_id] = node_name[2:]
   if node_is_const:
     anode_consts[node_id] = node_const_value
 
@@ -88,11 +89,11 @@ for gid in agates:
   rhs = gate.rhs
   out = gate.out
   # Remove lhs input from `anode_outputs`
-  print("!@# anode_outputs.pop(lhs)=", anode_outputs.pop(lhs, None))
+  anode_outputs.pop(lhs, None)
   # Remove rhs input from `anode_outputs`
-  print("!@# anode_outputs.pop(rhs)=", anode_outputs.pop(rhs, None))
+  anode_outputs.pop(rhs, None)
   # Remove output from `anode_inputs`
-  print("!@# anode_inputs.pop(out)=", anode_inputs.pop(out, None))
+  anode_inputs.pop(out, None)
   # Handle constants
   if anode_consts.get(lhs) is not None:
     lhs = "("+str(anode_consts[lhs])+")"
@@ -260,6 +261,7 @@ class TTree:
     for tnid in self.tnodes:
       tnode = self.tnodes[tnid]
       assert tnode.rid == tnid
+      # if tnode.is_root and tnode.rid not in anode_outputs:
       if tnode.is_root:
         self.roots.append(tnode)
       elif tnode.is_leaf:
@@ -279,14 +281,14 @@ class TTree:
         pointed_to[tnode.lnode.rid] += 1
       if tnode.rnode:
         pointed_to[tnode.rnode.rid] += 1
-    print("!@# before: pointed_to=", pointed_to)
+    # print("!@# before: pointed_to=", pointed_to)
     # Start from the known roots (outputs)
     reversed_roots = self.roots[::-1]
     for i in reversed_roots:
       pointed_to.pop(i.rid)
-    print("!@# after:  pointed_to=", pointed_to)
+    # print("!@# after:  pointed_to=", pointed_to)
     queue = list(reversed_roots)
-    print("!@# queue before while=", queue)
+    # print("!@# queue before while=", queue)
     wires: list[TNode] = []
     wire_index = 0
     while queue:
@@ -337,7 +339,7 @@ class TTree:
     # map_node_rid_to_wire_index = {i.rid: index for index, i in enumerate(self.sorted_wires)}
     # print("!@# map_node_rid_to_wire_index=", map_node_rid_to_wire_index)
     for node in self.sorted_wires:
-      # Should check gate type instead?
+      # Skip non-gate wires
       if node.type is None:
         # Sanity check
         assert node.lnode is None and node.rnode is None
@@ -378,47 +380,31 @@ with open(output_filepath, "w") as f:
   tt.print_tree(f)
 
 
-# Output wire_index -> node_id
-# Output the wire_index of the leaves
-
+# Prepare inputs
+# Map wire id in arithc to wire index in MP-SPDZ circuit
 rid_to_iid = {node.rid: node.iid for node in tt.sorted_wires}
-leaves_node_id_to_wire_index = {
-  node_rid: rid_to_iid[node_rid]
+# Map input name to wire index in MP-SPDZ circuit (including constant wires)
+input_name_to_wire_index = {
+  anode_inputs[node_rid]: rid_to_iid[node_rid]
   for node_rid in tt.leaves
 }
-with open(node_id_to_wire_index_filepath, "w") as f:
-  json.dump(leaves_node_id_to_wire_index, f)
+
+# Prepare constants: anode_consts is what we want
+# Just sanity check for all constant must be in leaves so we don't miss passing any of them to MP-SPDZ circuit
+for node_rid in anode_consts:
+  assert node_rid in tt.leaves, f"Constant wire {node_rid} is not in leaves"
+
+# Prepare outputs
+# Map output name to wire index in MP-SPDZ circuit
+output_name_to_wire_index = {
+  output_name: rid_to_iid[node_rid]
+  for node_rid, output_name in anode_outputs.items()
+}
 
 
-
-# ls = tt.leaves_ordered()
-
-# f = open("circ.conf", "w")
-# for lid in ls:
-#   leaf = ls[lid]
-#   f.write(str(lid) + " " + anode_inputs[leaf.rid] + "\n")
-# f.close()
-
-# from ast import literal_eval
-
-# fi = open('inputs.json')
-# datai = json.load(fi)
-
-# mapi = {}
-
-# for aid in anode_inputs:
-#   aname = anode_inputs.get(aid)
-#   sep = aname.find("[")
-#   access = "datai['"+aname[:sep]+"']"+aname[sep:]
-#   mapi[aname] = eval(access)
-
-# for aid in anode_outputs:
-#   aname = anode_outputs.get(aid)
-#   sep = aname.find("[")
-#   access = "datai['"+aname[:sep]+"']"+aname[sep:]
-#   mapi[aname] = eval(access)
-
-# print(mapi)
-
-# # Closing file
-# fi.close()
+with open(circuit_info_filepath, "w") as f:
+  json.dump({
+    "input_name_to_wire_index": input_name_to_wire_index,
+    "constant_values": anode_consts,
+    "output_name_to_wire_index": output_name_to_wire_index,
+  }, f, indent=4)

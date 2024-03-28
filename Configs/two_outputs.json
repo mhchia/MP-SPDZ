@@ -1,23 +1,10 @@
-[
-    {
-        "wire_id": 339827882353457231733281877774418513,
-        "wire_name": "a",
-        "is_const": false,
-        "const_value": 0,
-        "from_party": 1
-    },
-    {
-        "wire_id": 261273425065800872138523378011643318856,
-        "wire_name": "b",
-        "is_const": false,
-        "const_value": 0,
-        "from_party": 0
-    },
-    {
-        "wire_id": 224358152556191904480812644829082501076,
-        "wire_name": "c",
-        "is_const": false,
-        "const_value": 0,
-        "from_party": 1
+{
+    "inputs_from": {
+        "0": [
+            "a",
+            "b",
+            "c"
+        ],
+        "1": []
     }
-]
+}

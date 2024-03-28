@@ -76,16 +76,13 @@ class Circuit:
 
     """
 
-    def __init__(self, path: str):
+    def __init__(self, arith_circuit_path: str, wire_id_for_inputs_path: str):
         # path might be /path/to/two_outputs.txt
-        self.filename = path
-        f = open(self.filename)
-        print("!@# path=", path)
-        # this should be /path/to/two_outputs.wire_id_for_inputs.json
-        wire_id_for_inputs_path = path.replace('.txt', '.wire_id_for_inputs.json')
-        with open(wire_id_for_inputs_path, 'r') as f:
-            self.wire_id_for_inputs = json.load(f)
-            print("!@# wire_id_for_inputs=", self.wire_id_for_inputs)
+        self.arith_circuit_path = arith_circuit_path
+        self.wire_id_for_inputs_path = wire_id_for_inputs_path
+        open(self.arith_circuit_path)
+        open(self.wire_id_for_inputs_path)
+
         self.functions = {}
 
     def __call__(self, *inputs):
@@ -113,8 +110,10 @@ class Circuit:
         return util.untuplify(res)
 
     def compile(self, *all_inputs):
-        print("!@# compile: all_inputs=", all_inputs)
-        f = open(self.filename)
+        # print("!@# compile: all_inputs=", all_inputs)
+        with open(self.wire_id_for_inputs_path) as f:
+            self.wire_id_for_inputs = json.load(f)
+        f = open(self.arith_circuit_path)
         lines = iter(f)
         next_line = lambda: next(lines).split()
         # First line: # gates in total and # wires in total
@@ -183,7 +182,6 @@ class Circuit:
                 assert len(line) == 6
                 # inputs = [wires[line[2]], wires[line[3]]]
                 ins = [wires[int(line[2 + i])] for i in range(2)]
-                print("!@# ins=", ins)
                 if gate_type == AGateType.ADD:
                     # I.e. output = input0 + input1
                     wires[int(line[4])] = ins[0] + ins[1]

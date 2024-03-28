@@ -1,24 +1,30 @@
 # Generate an input config file at `OUTPUT_CONFIG_PATH` with content like this:
-# [
-#     {
-#         "wire_id": 339827882353457231733281877774418513,
-#         "wire_name": "a",
-#         "is_const": false,
-#         "const_value": 0,
-#         "from_party": 1
+# {
+#     "inputs_from": {
+#         "0": ["a", "b"],
+#         "1": ["c"]
+#     }
+# }
+# Using `CIRCUIT_INFO_PATH` with content like this:
+# {
+#     "input_name_to_wire_index": {
+#         "a": 1,
+#         "b": 0,
+#         "c": 2
 #     },
-#     ...
-# ]
-
-# Using `NODE_ID_TO_WIRE_INDEX_PATH` with content like this:
-# {"339827882353457231733281877774418513": 1, "261273425065800872138523378011643318856": 0, "224358152556191904480812644829082501076": 2}
-
+#     "constant_values": {},
+#     "output_name_to_wire_index": {
+#         "a_add_b": 3,
+#         "a_mul_c": 4
+#     }
+# }
 
 
 import json
 
 CIRCUIT_NAME = "nn_circuit_small"
-NODE_ID_TO_WIRE_INDEX_PATH = f"{CIRCUIT_NAME}.node_id_to_wire_index.json"
+# CIRCUIT_NAME = "two_outputs"
+CIRCUIT_INFO_PATH = f"{CIRCUIT_NAME}.circuit_info.json"
 OUTPUT_CONFIG_PATH = f'Configs/{CIRCUIT_NAME}.json'
 NUM_PARTIES = 2
 NUM_INPUTS_PER_PARTY = 1000
@@ -26,28 +32,38 @@ NUM_INPUTS_PER_PARTY = 1000
 
 def main():
     # Load the node_id_to_wire_index
-    with open(NODE_ID_TO_WIRE_INDEX_PATH, 'r') as f:
+    # {
+    #   "input_name_to_wire_index": { "a": 1, "b": 0, "c": 2 },
+    #   "constant_values": {},
+    #   "output_name_to_wire_index": { "a_add_b": 3, "a_mul_c": 4 }
+    # }
+    with open(CIRCUIT_INFO_PATH, 'r') as f:
         raw = json.load(f)
-        node_id_to_wire_index = {
-            int(k): int(v)
-            for k, v in raw.items()
-        }
 
-    len_inputs_required = len(node_id_to_wire_index)
+    input_name_to_wire_index = {k: int(v) for k, v in raw['input_name_to_wire_index'].items()}
+    constants = {k: int(v) for k, v in raw['constant_values'].items()}
+    input_name_to_wire_index_without_consts = {
+        k: v for k, v in input_name_to_wire_index.items() if k not in constants
+    }
+
+    len_inputs_required = len(input_name_to_wire_index_without_consts)
     assert NUM_INPUTS_PER_PARTY > len_inputs_required
 
     # Generate the output config file
+    # E.g.
+    # {
+    #     "inputs_from": {
+    #         "0": ["a", "b"],
+    #         "1": ["c"]
+    #     }
+    # }
+    # Divide the inputs into NUM_PARTIES, by the first N/NUM_PARTIES inputs for party 0, the next N/NUM_PARTIES inputs for party 1, etc.
+    inputs_from = {}
+    for i in range(NUM_PARTIES):
+        inputs_from[str(i)] = list(input_name_to_wire_index_without_consts.keys())[i * NUM_INPUTS_PER_PARTY:(i + 1) * NUM_INPUTS_PER_PARTY]
+
     with open(OUTPUT_CONFIG_PATH, 'w') as f:
-        json.dump([
-            {
-                "wire_id": node_id,
-                "wire_name": f"{node_id} at wire {wire_id}",
-                "is_const": False,
-                "const_value": 0,
-                "from_party": 1
-            }
-            for node_id, wire_id in node_id_to_wire_index.items()
-        ], f, indent=4)
+        json.dump({'inputs_from': inputs_from}, f, indent=4)
 
     # Generate real inputs for the circuit
     #     input_file_for_party_i = "Player-Data/Input-P0-0"
