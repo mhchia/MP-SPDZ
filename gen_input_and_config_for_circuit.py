@@ -12,13 +12,12 @@
 #         "b": 0,
 #         "c": 2
 #     },
-#     "constant_values": {},
+#     "constants": {"d": { "value": 50, "wire_index": 3 }},
 #     "output_name_to_wire_index": {
-#         "a_add_b": 3,
-#         "a_mul_c": 4
+#         "a_add_b": 4,
+#         "a_mul_c": 5
 #     }
 # }
-
 
 import json
 
@@ -27,21 +26,21 @@ CIRCUIT_NAME = "nn_circuit_small"
 CIRCUIT_INFO_PATH = f"{CIRCUIT_NAME}.circuit_info.json"
 OUTPUT_CONFIG_PATH = f'Configs/{CIRCUIT_NAME}.json'
 NUM_PARTIES = 2
-NUM_INPUTS_PER_PARTY = 1000
+NUM_INPUTS_PER_PARTY = 200
 
 
 def main():
     # Load the node_id_to_wire_index
     # {
     #   "input_name_to_wire_index": { "a": 1, "b": 0, "c": 2 },
-    #   "constant_values": {},
-    #   "output_name_to_wire_index": { "a_add_b": 3, "a_mul_c": 4 }
+    #   "constants": {"d": {"value": 50, "wire_index": 3}},
+    #   "output_name_to_wire_index": { "a_add_b": 4, "a_mul_c": 5 }
     # }
     with open(CIRCUIT_INFO_PATH, 'r') as f:
         raw = json.load(f)
 
     input_name_to_wire_index = {k: int(v) for k, v in raw['input_name_to_wire_index'].items()}
-    constants = {k: int(v) for k, v in raw['constant_values'].items()}
+    constants = raw['constants'].items()
     input_name_to_wire_index_without_consts = {
         k: v for k, v in input_name_to_wire_index.items() if k not in constants
     }
@@ -57,10 +56,10 @@ def main():
     #         "1": ["c"]
     #     }
     # }
-    # Divide the inputs into NUM_PARTIES, by the first N/NUM_PARTIES inputs for party 0, the next N/NUM_PARTIES inputs for party 1, etc.
     inputs_from = {}
-    for i in range(NUM_PARTIES):
-        inputs_from[str(i)] = list(input_name_to_wire_index_without_consts.keys())[i * NUM_INPUTS_PER_PARTY:(i + 1) * NUM_INPUTS_PER_PARTY]
+    inputs_from[str(0)] = list(input_name_to_wire_index_without_consts.keys())
+    for i in range(1, NUM_PARTIES):
+        inputs_from[str(i)] = []
 
     with open(OUTPUT_CONFIG_PATH, 'w') as f:
         json.dump({'inputs_from': inputs_from}, f, indent=4)

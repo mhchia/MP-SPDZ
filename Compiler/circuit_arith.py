@@ -76,12 +76,11 @@ class Circuit:
 
     """
 
-    def __init__(self, arith_circuit_path: str, wire_id_for_inputs_path: str):
+    def __init__(self, arith_circuit_path: str, wire_id_for_inputs: list[int]):
         # path might be /path/to/two_outputs.txt
         self.arith_circuit_path = arith_circuit_path
-        self.wire_id_for_inputs_path = wire_id_for_inputs_path
+        self.wire_id_for_inputs = wire_id_for_inputs
         open(self.arith_circuit_path)
-        open(self.wire_id_for_inputs_path)
 
         self.functions = {}
 
@@ -111,8 +110,6 @@ class Circuit:
 
     def compile(self, *all_inputs):
         # print("!@# compile: all_inputs=", all_inputs)
-        with open(self.wire_id_for_inputs_path) as f:
-            self.wire_id_for_inputs = json.load(f)
         f = open(self.arith_circuit_path)
         lines = iter(f)
         next_line = lambda: next(lines).split()
@@ -216,5 +213,6 @@ class Circuit:
         # this means to return the last elements (outputs) in `wires`
         # return self.wires[-sum(self.n_output_wires):]
         outputs = self.wires[-n_outputs:]
-        print("!@# compile: outputs=", outputs)
+        outputs = self.wires
+        # print("!@# compile: outputs=", outputs)
         return outputs

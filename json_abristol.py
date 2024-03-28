@@ -1,6 +1,7 @@
 import json
 
 
+# filename = 'strange'
 # filename = 'two_outputs'
 filename = 'nn_circuit_small'
 # filename = 'circ'
@@ -40,11 +41,13 @@ class ANode:
 
 # node_id -> ANode
 anodes: dict[int, ANode] = {}
-# node_id -> const_value
+# constant values: node_id -> const_value
 anode_consts: dict[int, int] = {}
-# node_id -> wire_name
+# constant names: node_id -> wire_name
+const_names: dict[int, str] = {}
+# highest level inputs: node_id -> wire_name
 anode_inputs: dict[int, str] = {}
-# node_id -> wire_name
+# highest level outputs: node_id -> wire_name
 anode_outputs: dict[int, str] = {}
 
 
@@ -57,14 +60,14 @@ for node in data['nodes']:
   node_const_value = node['const_value']
   anode = ANode(node_id, node_signals, node_names, node_is_const, node_const_value)
   anodes[node_id] = anode
-  # Should just use the last one?
-  node_name = node_names[-1]
-  # If it's the highest level node, it's an input and output we're interested in
-  if node_name.startswith("0."):
-    anode_inputs[node_id] = node_name[2:]
-    anode_outputs[node_id] = node_name[2:]
+  # Seems the last name is the real wire name
+  for node_name in node_names:
+    if node_name.startswith("0."):
+      anode_inputs[node_id] = node_name[2:]
+      anode_outputs[node_id] = node_name[2:]
   if node_is_const:
     anode_consts[node_id] = node_const_value
+    const_names[node_id] = node_name
 
 agates: dict[int, AGate] = {}
 
@@ -94,22 +97,11 @@ for gid in agates:
   anode_outputs.pop(rhs, None)
   # Remove output from `anode_inputs`
   anode_inputs.pop(out, None)
-  # Handle constants
-  if anode_consts.get(lhs) is not None:
-    lhs = "("+str(anode_consts[lhs])+")"
-  if anode_consts.get(rhs) is not None:
-    rhs = "("+str(anode_consts[rhs])+")"
-  # if gate.type == 'AAdd':
-    # print(""+str(out)+" = "+str(lhs)+" + "+str(rhs))
-  # elif gate.type == 'ASub':
-    # print(""+str(out)+" = "+str(lhs)+" - "+str(rhs))
-  # elif gate.type == 'AMul':
-    # print(""+str(out)+" = "+str(lhs)+" * "+str(rhs))
-  # elif gate.type == 'ALt':
-    # print(""+str(out)+" = "+str(lhs)+" < "+str(rhs))
+
 
 print("!@# after pop: anode_inputs= ", anode_inputs)
 print("!@# after pop: anode_outputs=", anode_outputs)
+print("!@# after pop: const_names=  ", const_names)
 print("!@# after pop: anode_consts= ", anode_consts)
 
 
@@ -261,7 +253,6 @@ class TTree:
     for tnid in self.tnodes:
       tnode = self.tnodes[tnid]
       assert tnode.rid == tnid
-      # if tnode.is_root and tnode.rid not in anode_outputs:
       if tnode.is_root:
         self.roots.append(tnode)
       elif tnode.is_leaf:
@@ -382,15 +373,23 @@ with open(output_filepath, "w") as f:
 
 # Prepare inputs
 # Map wire id in arithc to wire index in MP-SPDZ circuit
+# TODO: if an output is a constant now it will be missed
 rid_to_iid = {node.rid: node.iid for node in tt.sorted_wires}
 # Map input name to wire index in MP-SPDZ circuit (including constant wires)
 input_name_to_wire_index = {
   anode_inputs[node_rid]: rid_to_iid[node_rid]
-  for node_rid in tt.leaves
+  for node_rid in tt.leaves if node_rid not in anode_consts
 }
 
 # Prepare constants: anode_consts is what we want
 # Just sanity check for all constant must be in leaves so we don't miss passing any of them to MP-SPDZ circuit
+const_name_to_value_wire_id = {
+  const_names[node_rid]: {
+    'value': const_value,
+    'wire_index': rid_to_iid[node_rid],
+  }
+  for node_rid, const_value in anode_consts.items()
+}
 for node_rid in anode_consts:
   assert node_rid in tt.leaves, f"Constant wire {node_rid} is not in leaves"
 
@@ -405,6 +404,6 @@ output_name_to_wire_index = {
 with open(circuit_info_filepath, "w") as f:
   json.dump({
     "input_name_to_wire_index": input_name_to_wire_index,
-    "constant_values": anode_consts,
+    "constants": const_name_to_value_wire_id,
     "output_name_to_wire_index": output_name_to_wire_index,
   }, f, indent=4)

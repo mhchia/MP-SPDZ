@@ -6,12 +6,13 @@ from pathlib import Path
 CIRCUIT_NAME = 'arith_circuit_interpreter'
 CIRCUIT_INTERPRETER_PATH = Path(f'Programs/Source/{CIRCUIT_NAME}.mpc')
 CIRCUIT_INTERPRETER_PATH.parent.mkdir(parents=True, exist_ok=True)
-CMD_RUN_INTERPRETER = f'Scripts/compile-run.py -E semi {CIRCUIT_NAME}'
+CMD_RUN_INTERPRETER = f'Scripts/compile-run.py -E semi {CIRCUIT_NAME} -M'
 
 # Actual arithmetic circuit to be executed by the MP-SPDZ interpreter above
 # ARITH_CIRCUIT_NAME = 'arith_circuit_example'
 # ARITH_CIRCUIT_NAME = 'circ'
 ARITH_CIRCUIT_NAME = 'nn_circuit_small'
+# ARITH_CIRCUIT_NAME = 'strange'
 # ARITH_CIRCUIT_NAME = 'two_outputs'
 ARITH_CIRCUIT_PATH = f"{ARITH_CIRCUIT_NAME}.txt"
 # Config file defining a input is either a constant or should be read from which party
@@ -36,15 +37,15 @@ def generate_arith_circuit_interpreter(
     input_config_path: str,
 ):
     # {
-    #   "input_name_to_wire_index": { "a": 1, "b": 0, "c": 2, "d": 3},
-    #   "constant_values": {"d": 50},
+    #   "input_name_to_wire_index": { "a": 1, "b": 0, "c": 2},
+    #   "constants": {"d": {"value": 50, "wire_index": 3}},
     #   "output_name_to_wire_index": { "a_add_b": 4, "a_mul_c": 5 }
     # }
     with open(circuit_info_path, 'r') as f:
         raw = json.load(f)
 
     input_name_to_wire_index = {k: int(v) for k, v in raw['input_name_to_wire_index'].items()}
-    constants = {k: int(v) for k, v in raw['constant_values'].items()}
+    constants: dict[str, dict[str, int]] = raw['constants']
     output_name_to_wire_index = {k: int(v) for k, v in raw['output_name_to_wire_index'].items()}
     # {
     #     "inputs_from": {
@@ -58,37 +59,35 @@ def generate_arith_circuit_interpreter(
 
     # Make inputs to circuit (not wires!!) from the user config
     # The inputs order will be [constant1, constant2, ..., party_0_input1, party_0_input2, ..., party_1_input1, ...]
-    inputs_name_list = []
     inputs_str_list = []
-    for name, value in constants.items():
-        inputs_name_list.append(name)
+    wire_index_for_input = []
+    for name, o in constants.items():
+        value = o['value']
+        wire_index = o['wire_index']
+        wire_index_for_input.append(wire_index)
         inputs_str_list.append(f'cint({value})')
     for party, inputs in inputs_from.items():
         for name in inputs:
-            inputs_name_list.append(name)
+            wire_index = input_name_to_wire_index[name]
+            wire_index_for_input.append(wire_index)
             inputs_str_list.append(f'sint.get_input_from({party})')
-    inputs_str = '[' + ', '.join(inputs_str_list) + ']'
 
+    #
+    # Generate the circuit code
+    #
+    inputs_str = '[' + ', '.join(inputs_str_list) + ']'
     # For outputs, should print the actual output names, and
     # lines are ordered by actual output wire index since it's guaranteed the order
     # E.g.
-    # print_ln('Outputs[0]: a_add_b=%s', outputs[4].reveal())
-    # print_ln('Outputs[1]: a_mul_c=%s', outputs[5].reveal())
-    len_output_name_to_wire_index = len(output_name_to_wire_index)
+    # print_ln('outputs[0]: a_add_b=%s', outputs[0].reveal())
+    # print_ln('outputs[1]: a_mul_c=%s', outputs[1].reveal())
     print_outputs_str_list = [
-        f"print_ln('outputs[{i}]: {output_name}=%s', outputs[{i}].reveal())"
-        for i, output_name in enumerate(output_name_to_wire_index)
+        f"print_ln('outputs[{i}]: {output_name}=%s', outputs[{output_name_to_wire_index[output_name]}].reveal())"
+        for i, output_name in enumerate(output_name_to_wire_index.keys())
     ]
     print_outputs_str = '\n'.join(print_outputs_str_list)
-
-    # Write the wire index for inputs to a file, for the interpreter to use
-    wire_index_for_input = [input_name_to_wire_index[name] for name in inputs_name_list]
-    with open(WIRE_ID_FOR_INPUT_PATH, 'w') as f:
-        json.dump(wire_index_for_input, f)
-
-    # Generate the circuit code
     circuit = f"""from circuit_arith import Circuit
-circuit = Circuit('{arith_circuit_path}', '{WIRE_ID_FOR_INPUT_PATH}')
+circuit = Circuit('{arith_circuit_path}', {wire_index_for_input})
 inputs = {inputs_str}
 outputs = circuit(inputs)
 # Print outputs
