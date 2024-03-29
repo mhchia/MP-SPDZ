@@ -22,6 +22,7 @@
 import json
 
 CIRCUIT_NAME = "nn_circuit_small"
+# CIRCUIT_NAME = "strange"
 # CIRCUIT_NAME = "two_outputs"
 CIRCUIT_INFO_PATH = f"{CIRCUIT_NAME}.circuit_info.json"
 OUTPUT_CONFIG_PATH = f'Configs/{CIRCUIT_NAME}.json'

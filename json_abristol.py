@@ -1,14 +1,18 @@
 import json
+import os
+import sys
 
+# # get filename from args
+# arithc_json_path = sys.argv[1]
+# dirname = os.path.dirname(arithc_json_path)
+# filename = os.path.basename(arithc_json_path)
+# circuit_name = ".".join(filename.split('.')[:-1])
+circuit_name = "nn_circuit_small"
+# circuit_name = "strange"
 
-# filename = 'strange'
-# filename = 'two_outputs'
-filename = 'nn_circuit_small'
-# filename = 'circ'
-# filename = 'arith_circuit_example'
-input_filepath = f"{filename}.json"
-output_filepath = f"{filename}.txt"
-circuit_info_filepath = f"{filename}.circuit_info.json"
+input_filepath = f"{circuit_name}.json"
+output_filepath = f"{circuit_name}.txt"
+circuit_info_filepath = f"{circuit_name}.circuit_info.json"
 with open(input_filepath) as f:
   data = json.load(f)
 
@@ -63,7 +67,11 @@ for node in data['nodes']:
   # Seems the last name is the real wire name
   for node_name in node_names:
     if node_name.startswith("0."):
-      anode_inputs[node_id] = node_name[2:]
+      # Assuming inputs are always before outputs
+      # Only set it if it's not already set for inputs, to avoid names being overwritten
+      if node_id not in anode_inputs:
+        anode_inputs[node_id] = node_name[2:]
+      # It's fine for output to be overwritten
       anode_outputs[node_id] = node_name[2:]
   if node_is_const:
     anode_consts[node_id] = node_const_value
@@ -381,6 +389,8 @@ input_name_to_wire_index = {
   for node_rid in tt.leaves if node_rid not in anode_consts
 }
 
+# FIXME: outputs without a gate are skipped (i.e. direct assigned from input or a constant, etc)
+
 # Prepare constants: anode_consts is what we want
 # Just sanity check for all constant must be in leaves so we don't miss passing any of them to MP-SPDZ circuit
 const_name_to_value_wire_id = {
@@ -389,15 +399,15 @@ const_name_to_value_wire_id = {
     'wire_index': rid_to_iid[node_rid],
   }
   for node_rid, const_value in anode_consts.items()
+  if node_rid in rid_to_iid  # Skip constant wires that are not used in any gates. E.g. constant outputs
 }
-for node_rid in anode_consts:
-  assert node_rid in tt.leaves, f"Constant wire {node_rid} is not in leaves"
 
 # Prepare outputs
 # Map output name to wire index in MP-SPDZ circuit
 output_name_to_wire_index = {
   output_name: rid_to_iid[node_rid]
   for node_rid, output_name in anode_outputs.items()
+  if node_rid in rid_to_iid  # Skip output wires that are not used in any gates. E.g. constant outputs
 }
 
 
