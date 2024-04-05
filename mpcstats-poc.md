@@ -19,7 +19,6 @@
         - 1000 rows: ?
 
 ## To-Dos
-- [ ] Confirm parties can run on remote machines
 - [ ] Optimize the bmi example to decrease run-time
 - [ ] Run the rest of protocols and see which is more suitable for our use case
 - [ ] Confirm the program is correctly written and protocols are correctly used
@@ -56,4 +55,21 @@ In a new terminal, run Data Provider 1
 In a new terminal, run User (Data Consumer)
 ```bash
 ./semi-party.x -N 3 -p 2 -pn 55781 -OF . bmi
+```
+
+## Run on different hosts
+Have a file containing the IP addresses of the hosts in this format. First line is the IP address of party 0, second line is the IP address of party 1, and so on. For example, we have a file `hosts` with the following content with 2 parties:
+```
+18.183.238.119:3000
+43.207.105.60:3000
+```
+
+For the party0, run
+```bash
+./semi-party.x -N 2 -p 0  -OF . bmi -ip hosts
+```
+
+For the party1, run
+```bash
+./semi-party.x -N 2 -p 1  -OF . bmi -ip hosts
 ```
