@@ -1,6 +1,4 @@
 import json
-import os
-import sys
 
 # # get filename from args
 # arithc_json_path = sys.argv[1]
@@ -9,12 +7,14 @@ import sys
 # circuit_name = ".".join(filename.split('.')[:-1])
 circuit_name = "nn_circuit_small"
 # circuit_name = "strange"
+# circuit_name = "two_outputs"
 
 input_filepath = f"{circuit_name}.json"
 output_filepath = f"{circuit_name}.txt"
 circuit_info_filepath = f"{circuit_name}.circuit_info.json"
 with open(input_filepath) as f:
   data = json.load(f)
+
 
 class AGate:
   def __init__(self, id: int, type: str, lhs: int, rhs: int, out: int):
@@ -31,7 +31,6 @@ class AGate:
 
 class ANode:
   def __init__(self, id: int, signals: list[int], names: list[str], is_const: bool, const_value: int):
-    # TODO: ?
     self.id = id
     # not used
     self.signals = signals
@@ -55,7 +54,9 @@ anode_inputs: dict[int, str] = {}
 anode_outputs: dict[int, str] = {}
 
 
+#
 # Parse the json file
+#
 for node in data['nodes']:
   node_id = node['id']
   node_signals = node['signals']
@@ -64,7 +65,9 @@ for node in data['nodes']:
   node_const_value = node['const_value']
   anode = ANode(node_id, node_signals, node_names, node_is_const, node_const_value)
   anodes[node_id] = anode
-  # Seems the last name is the real wire name
+  # FIXME:
+  # FIXME: this seems not a correct way to determine input/output
+  # If the node name starts with "0.", it's a highest level signal.
   for node_name in node_names:
     if node_name.startswith("0."):
       # Assuming inputs are always before outputs
@@ -88,12 +91,11 @@ for gate in data['gates']:
   agate = AGate(gate_id, gate_type, glh_input, grh_input, goutput)
   agates[gate_id] = agate
 
-# print("!@# before pop: anode_inputs=", anode_inputs)
-# print("!@# before pop: anode_outputs=", anode_outputs)
-
-
 # Clean up `anode_inputs` and `anode_outputs` to make sure they only contain their corresponding wires
 # gid = 0...ngate-1
+
+# A node can be simultaneously an input and an output
+# If it's an input to a gate, remove it from `anode_outputs`
 for gid in agates:
   gate = agates[gid]
   lhs = gate.lhs
@@ -106,96 +108,35 @@ for gid in agates:
   # Remove output from `anode_inputs`
   anode_inputs.pop(out, None)
 
-
+# Now we get the correct `anode_inputs` and `anode_outputs`
 print("!@# after pop: anode_inputs= ", anode_inputs)
 print("!@# after pop: anode_outputs=", anode_outputs)
 print("!@# after pop: const_names=  ", const_names)
 print("!@# after pop: anode_consts= ", anode_consts)
 
+#
+# To assign nodes (wires) for bristol circuit, we need to make each input wire has a lower index than its output
+# To achieve this, we can assign index for each wire in their topological order:
+# Based on the parsed arithc, build a tree structure for the this circuit
+#   - Each node (wire) is a tree node, output is the parent of its inputs
+#   - There can be multiple roots (outputs)
+# Traverse the tree in topological order and assign index for each wire
+#
 
-# Wires?
+
 class TNode:
   def __init__(self, rid: int, type: str | None, lnode: 'TNode', rnode: 'TNode'):
+    # id in the topological order (wire id in bristol circuit)
     self.iid = 0
-    # real id?
+    # original node id from arithc
     self.rid = rid
     self.lnode = lnode
     self.rnode = rnode
-    # gate type. if it's a wire, it's None
+    # gate type: AAdd, AMul. None if it's an input or output without a gate
     self.type = type
     self.is_root = True
     self.is_leaf = True
-    self.is_visited = False
 
-  def visit_dfs(self, id: int) -> int:
-    if self.is_visited:
-      return id
-    self.is_visited = True
-    if self.lnode is not None:
-      id = self.lnode.visit_dfs(id)
-    if self.rnode is not None:
-      id = self.rnode.visit_dfs(id)
-    self.iid = id
-    return id + 1
-
-  def fill_iid_dfs2(self, id: int) -> int:
-    if self.is_visited:
-      return id
-    self.is_visited = True
-    if (self.lnode is None) and (self.rnode is None):
-      return id
-    if self.lnode is not None:
-      id = self.lnode.fill_iid_dfs2(id)
-    if self.rnode is not None:
-      id = self.rnode.fill_iid_dfs2(id)
-    self.iid = id
-    return id + 1
-
-  def visit_dfs2(self, id: int) -> int:
-    if self.is_visited:
-      return id
-    self.is_visited = True
-    if self.lnode is not None:
-      id = self.lnode.visit_dfs2(id)
-    if self.rnode is not None:
-      id = self.rnode.visit_dfs2(id)
-    if (self.lnode is None) and (self.rnode is None):
-      self.iid = id
-      return id + 1
-    return id
-
-  def visit_root2(self, tt: 'TTree') -> int:
-    if self.is_visited:
-      return id
-    self.is_visited = True
-    id = 0
-    print(id)
-    id = self.lnode.visit_dfs2(id)
-    id = self.rnode.visit_dfs2(id)
-    tt.reset_visit()
-    id = self.fill_iid_dfs2(id)
-    print(id)
-    return id
-
-  def print_dfs(self, f):
-    if self.is_visited:
-      return
-    self.is_visited = True
-    if self.lnode is not None:
-      id = self.lnode.print_dfs(f)
-    if self.rnode is not None:
-      id = self.rnode.print_dfs(f)
-    if (self.lnode is None) and (self.rnode is None):
-      return
-    f.write("2 1 " + str(self.lnode.iid) + " " + str(self.rnode.iid) + " " + str(self.iid) + " " + str(self.type) + "\n")
-
-  def print_root(self, f):
-    if self.is_visited:
-      return
-    self.is_visited = True
-    self.lnode.print_dfs(f)
-    self.rnode.print_dfs(f)
-    f.write("2 1 " + str(self.lnode.iid) + " " + str(self.rnode.iid) + " " + str(self.iid) + " " + str(self.type) + "\n")
 
 class TTree:
   def __init__(self):
@@ -225,11 +166,6 @@ class TTree:
     if (self.tnodes.get(grhs) is None):
       rnode = TNode(grhs, None, None, None)
       self.tnodes[grhs] = rnode
-
-  def reset_visit(self):
-    for nid in self.tnodes:
-      tnode = self.tnodes[nid]
-      tnode.is_visited = False
 
   def build_tree(self, gates: dict[int, AGate]):
     # `gates` is ordered by id.
@@ -332,11 +268,6 @@ class TTree:
     # self.map_node_rid_to_wire_index = {i.rid: index for index, i in enumerate(self.sorted_wires)}
 
   def print_tree(self, f):
-    # for root in self.roots:
-    #   root.print_dfs(f)
-    # print("!@# sorted_wires=", [i.rid for i in self.sorted_wires])
-    # map_node_rid_to_wire_index = {i.rid: index for index, i in enumerate(self.sorted_wires)}
-    # print("!@# map_node_rid_to_wire_index=", map_node_rid_to_wire_index)
     for node in self.sorted_wires:
       # Skip non-gate wires
       if node.type is None:
@@ -349,12 +280,6 @@ class TTree:
       # f.write("2 1 " + str(lnode_iid) + " " + str(rnode_iid) + " " + str(output_iid) + " " + str(node.type) + "\n")
       f.write("2 1 " + str(node.lnode.iid) + " " + str(node.rnode.iid) + " " + str(node.iid) + " " + str(node.type) + "\n")
 
-  def leaves_ordered(self):
-    ls = {}
-    for lid in self.leaves:
-      leaf = self.leaves[lid]
-      ls[leaf.iid] = leaf
-    return ls
 
 tt = TTree()
 tt.build_tree(agates)
@@ -374,9 +299,17 @@ with open(output_filepath, "w") as f:
 
   f.write("\n")
 
-  tt.reset_visit()
   # print a line for each gate
   tt.print_tree(f)
+
+
+#
+# Write circuit_info.json:
+# {
+#   "input_name_to_wire_index": ,
+#   "constants":,
+#   "output_name_to_wire_index",
+# }
 
 
 # Prepare inputs
@@ -409,7 +342,6 @@ output_name_to_wire_index = {
   for node_rid, output_name in anode_outputs.items()
   if node_rid in rid_to_iid  # Skip output wires that are not used in any gates. E.g. constant outputs
 }
-
 
 with open(circuit_info_filepath, "w") as f:
   json.dump({
