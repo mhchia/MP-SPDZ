@@ -58,18 +58,18 @@ In a new terminal, run User (Data Consumer)
 ```
 
 ## Run on different hosts
-Have a file containing the IP addresses of the hosts in this format. First line is the IP address of party 0, second line is the IP address of party 1, and so on. For example, we have a file `hosts` with the following content with 2 parties:
+Parties can be run on different hosts. For all parties, share a same file containing the IP addresses of all parties in this format. First line is the IP address of party 0, second line is the IP address of party 1, and so on. For example, we have a file `hosts` with the following content with 2 parties:
 ```
 18.183.238.119:3000
 43.207.105.60:3000
 ```
 
-For the party0, run
+On the machine0 (party0), run
 ```bash
 ./semi-party.x -N 2 -p 0  -OF . bmi -ip hosts
 ```
 
-For the party1, run
+On the machine1 (party1), run
 ```bash
 ./semi-party.x -N 2 -p 1  -OF . bmi -ip hosts
 ```
