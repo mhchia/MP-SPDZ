@@ -184,6 +184,8 @@ class Circuit:
                     wires[int(line[4])] = ins[0] + ins[1]
                 elif gate_type == AGateType.MUL:
                     wires[int(line[4])] = ins[0] * ins[1]
+                elif gate_type == AGateType.DIV:
+                    wires[int(line[4])] = ins[0] / ins[1]
                 elif gate_type == AGateType.LT:
                     wires[int(line[4])] = ins[0] < ins[1]
                 elif gate_type == AGateType.SUB:
