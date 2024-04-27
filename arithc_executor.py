@@ -198,10 +198,8 @@ def generate_arith_circuit_interpreter(
     # print_ln('outputs[0]: a_add_b=%s', outputs[0].reveal())
     # print_ln('outputs[1]: a_mul_c=%s', outputs[1].reveal())
     print_outputs_str_list = [
-        # f"print_ln('outputs[{i}]: {output_name}=%s', wires[{output_name_to_wire_index[output_name]}].reveal())"
-        # for i, output_name in enumerate(output_name_to_wire_index.keys())
-        f"print_ln('wires[{i}]=%s', wires[{i}].reveal())"
-        for i in range(num_wires)
+        f"print_ln('outputs[{i}]: {output_name}=%s', wires[{output_name_to_wire_index[output_name]}].reveal())"
+        for i, output_name in enumerate(output_name_to_wire_index.keys())
     ]
     print_outputs_str = '\n'.join(print_outputs_str_list)
 
