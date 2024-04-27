@@ -76,10 +76,10 @@ class Circuit:
 
     """
 
-    def __init__(self, arith_circuit_path: str, wire_id_for_inputs: list[int]):
+    def __init__(self, arith_circuit_path: str): #, wire_id_for_inputs: list[int]):
         # path might be /path/to/two_outputs.txt
         self.arith_circuit_path = arith_circuit_path
-        self.wire_id_for_inputs = wire_id_for_inputs
+        # self.wire_id_for_inputs = wire_id_for_inputs
         open(self.arith_circuit_path)
 
         self.functions = {}
@@ -131,8 +131,8 @@ class Circuit:
         assert(n_outputs == len(self.n_output_wires))
         next(lines)
 
-        wires = [None] * n_wires
-        self.wires = wires
+        # wires = [None] * n_wires
+        # self.wires = wires
         # inputs        = (s2, s3)
         # n_input_wires = [64, 64]  # useless for arithc
 
@@ -147,24 +147,26 @@ class Circuit:
         #     s += n
 
         # actual input values passed
-        wire_index_for_inputs = self.wire_id_for_inputs
+        # wire_index_for_inputs = self.wire_id_for_inputs
         inputs = all_inputs[:n_inputs]
-        print("!@# compile: wire_index_for_inputs=", wire_index_for_inputs)
-        print("!@# compile: inputs=               ", inputs)
-        # link wires to actual inputs
-        for wire_index, input_value in zip(wire_index_for_inputs, inputs):
-            # No need to check bits
-            # assert(len(input) == input_wires)
-            # # this for go through all bits, assign bit0 of input0 to wire0, etc.
-            # for i, reg in enumerate(input):
-            #     # wires[0] = input_bit[0]
-            #     wires[i_wire] = reg
-            #     i_wire += 1
-            # FIXME:
-            # has mapping from rid to real_value (sint.get_input_from(i))
-            # has mapping from rid to index at `wires`
-            # wires[index] = real_value
-            wires[wire_index] = input_value
+        self.wires = inputs
+        # print("!@# compile: wire_index_for_inputs=", wire_index_for_inputs)
+        # print("!@# compile: inputs=               ", inputs)
+        # # link wires to actual inputs
+        # for wire_index, input_value in zip(wire_index_for_inputs, inputs):
+        #     # No need to check bits
+        #     # assert(len(input) == input_wires)
+        #     # # this for go through all bits, assign bit0 of input0 to wire0, etc.
+        #     # for i, reg in enumerate(input):
+        #     #     # wires[0] = input_bit[0]
+        #     #     wires[i_wire] = reg
+        #     #     i_wire += 1
+        #     # FIXME:
+        #     # has mapping from rid to real_value (sint.get_input_from(i))
+        #     # has mapping from rid to index at `wires`
+        #     # wires[index] = real_value
+        #     wires[wire_index] = input_value
+
 
         # TODO: check n_gates == number of lines for gates
         for i in range(n_gates):
