@@ -54,17 +54,19 @@ ARITH_CIRCUIT_NAME = 'nn_circuit_small'
 # ARITH_CIRCUIT_NAME = 'two_outputs'
 ARITH_CIRCUIT_PATH = f"{ARITH_CIRCUIT_NAME}.txt"
 # Config file defining a input is either a constant or should be read from which party
-INPUT_CONFIG_PATH = f'{ARITH_CIRCUIT_NAME}.party_settings.json'
+MPC_SETTINGS_PATH = f'{ARITH_CIRCUIT_NAME}.mpc_settings.json'
 CIRCUIT_INFO_PATH = f"{ARITH_CIRCUIT_NAME}.circuit_info.json"
 WIRE_ID_FOR_INPUT_PATH = f"{ARITH_CIRCUIT_NAME}.wire_id_for_inputs.json"
 
 
 def main():
     # Generate MP-SPDZ circuit to interpret the  and write to file
-    # TODO: INPUT_CONFIG_PATH should be an argument to the script
-    interpreter_code = generate_arith_circuit_interpreter(ARITH_CIRCUIT_PATH, CIRCUIT_INFO_PATH, INPUT_CONFIG_PATH)
+    # TODO: MPC_SETTINGS_PATH should be an argument to the script
+    interpreter_code = generate_arith_circuit_interpreter(ARITH_CIRCUIT_PATH, CIRCUIT_INFO_PATH, MPC_SETTINGS_PATH)
     with open(CIRCUIT_INTERPRETER_PATH, 'w') as f:
         f.write(interpreter_code)
+
+    generate_mpspdz_inputs(CIRCUIT_INFO_PATH, MPC_SETTINGS_PATH)
 
     # Run the MP-SPDZ interpreter to interpret the arithmetic circuit
     os.system(CMD_RUN_INTERPRETER)
@@ -73,7 +75,7 @@ def main():
 def generate_arith_circuit_interpreter(
     arith_circuit_path: str,
     circuit_info_path: str,
-    input_config_path: str,
+    mpc_settings_path: str,
 ):
     '''
     Summary: Generate the MP-SPDZ code to interpret the arithmetic circuit
@@ -104,10 +106,9 @@ def generate_arith_circuit_interpreter(
     #     "b": 1,
     #   }
     # }
-    with open(input_config_path, 'r') as f:
+    with open(mpc_settings_path, 'r') as f:
         input_config = json.load(f)
     inputs_from: dict[str, int] = input_config['inputs_from']
-    num_parties = int(input_config['num_parties'])
 
     # Read number of wires from the bristol circuit file
     with open(arith_circuit_path, 'r') as f:
@@ -197,49 +198,65 @@ def generate_arith_circuit_interpreter(
 # Print outputs
 {print_outputs_str}
 """
-    print("!@# circuit=", circuit)
+    return circuit
 
-    # Generate inputs for MP-SPDZ
-    # FIXME: Should be separate for each party
+
+def generate_mpspdz_inputs_for_party(
+    party: int,
+    circuit_info_path: str,
+    mpc_settings_path: str,
+):
+    '''
+    Generate inputs for MP-SPDZ circuit
+
+    - The input file for circom mpc is defined as `{"input_name_0": input_value_0, "input_name_1": input_value_1, ... "input_name_N": input_value_N}`
+    - The actual wire list in the MP-SPDZ looks like
+      `[cint(123), sint.read_from_party(0), sint.read_from_party(1), cint(456), sint.read_from_party(0)]`
+    - In MP-SPDZ, input file is a text file in the format of `input0 input1 input2 ... inputN`, each separated with a space
+    - For a party, we need to generate an input file for MP-SPDZ according to the wire order of their inputs
+      - Continued with the example above, for party 0, its MP-SPDZ input file should be `input1 input4`
+      - This order can be obtained by sorting the `input_name_to_wire_index` by the wire index
+    '''
+
     # Read inputs value from user provided input files
     arithc_inputs = Path("Player-Data") / "arithc"
     arithc_inputs.mkdir(parents=True, exist_ok=True)
-    inputs_from_parties = {}
-    for i in range(num_parties):
-        with open(arithc_inputs / f"Input-P{i}-0") as f:
-            inputs_from_parties[i] = json.load(f)
-    # Merge all inputs values
-    inputs_value = {}
-    for party, inputs in inputs_from_parties.items():
-        inputs_value.update(inputs)
+    with open(arithc_inputs / f"Input-P{party}-0") as f:
+        input_values_for_party_json = json.load(f)
 
-    #
-    # Generate inputs for MP-SPDZ circuit
-    #
-    # - The input file for circom mpc is defined as `{"input_name_0": input_value_0, "input_name_1": input_value_1, ... "input_name_N": input_value_N}`
-    # - The actual wire list in the MP-SPDZ looks like
-    #   `[cint(123), sint.read_from_party(0), sint.read_from_party(1), cint(456), sint.read_from_party(0)]`
-    # - In MP-SPDZ, input file is a text file in the format of `input0 input1 input2 ... inputN`, each separated with a space
-    # - For a party, we need to generate an input file for MP-SPDZ according to the wire order of their inputs
-    #   - Continued with the example above, for party 0, its MP-SPDZ input file should be `input1 input4`
-    #   - This order can be obtained by sorting the `input_name_to_wire_index` by the wire index
-    #
-    # generate inputs in wire order
+    with open(mpc_settings_path, 'r') as f:
+        input_config = json.load(f)
+    inputs_from: dict[str, int] = input_config['inputs_from']
+    with open(circuit_info_path, 'r') as f:
+        circuit_info = json.load(f)
+        input_name_to_wire_index = circuit_info['input_name_to_wire_index']
+
     wire_to_name_sorted = sorted(input_name_to_wire_index.items(), key=lambda x: x[1])
-    wire_value_in_order_for_mpsdz = {
-        i: [] for i in range(num_parties)
-    }
+    wire_value_in_order_for_mpsdz = []
     for wire_name, wire_index in wire_to_name_sorted:
-        wire_from_party = inputs_from[wire_name]
-        wire_value = inputs_value[wire_name]
-        wire_value_in_order_for_mpsdz[wire_from_party].append(wire_value)
+        wire_from_party = int(inputs_from[wire_name])
+        # For the current party, we only care about the inputs from itself
+        if wire_from_party == party:
+            wire_value = input_values_for_party_json[wire_name]
+            wire_value_in_order_for_mpsdz.append(wire_value)
     # Write these ordered wire inputs for mp-spdz usage
-    for i in range(num_parties):
-        input_file_path_for_party = f"Player-Data/Input-P{i}-0"
-        with open(input_file_path_for_party, 'w') as f:
-            f.write(" ".join(map(str, wire_value_in_order_for_mpsdz[i])))
+    input_file_for_party_mpspdz = f"Player-Data/Input-P{party}-0"
+    with open(input_file_for_party_mpspdz, 'w') as f:
+        f.write(" ".join(map(str, wire_value_in_order_for_mpsdz)))
 
-    return circuit
+
+def generate_mpspdz_inputs(circuit_info_path: str, mpc_settings_path: str):
+    """
+    Generate inputs for MP-SPDZ circuit for all parties. This is a helper function
+    to generate inputs for all parties locally for testing.
+    In a real-world scenario, each party should generate their own input file with
+    `generate_mpspdz_inputs_for_party` function.
+    """
+    with open(mpc_settings_path, 'r') as f:
+        input_config = json.load(f)
+    num_parties = int(input_config['num_parties'])
+    for party in range(num_parties):
+        generate_mpspdz_inputs_for_party(party, circuit_info_path, mpc_settings_path)
 
 
 if __name__ == '__main__':

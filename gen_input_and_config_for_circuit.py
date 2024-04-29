@@ -1,4 +1,4 @@
-# Generate an input config file at `OUTPUT_CONFIG_PATH` with content like this:
+# Generate an input config file at `MPC_SETTINGS_PATH` with content like this:
 # {
 #     "inputs_from": {
 #         "0": ["a", "b"],
@@ -25,7 +25,7 @@ CIRCUIT_NAME = "nn_circuit_small"
 # CIRCUIT_NAME = "strange"
 # CIRCUIT_NAME = "two_outputs"
 CIRCUIT_INFO_PATH = f"{CIRCUIT_NAME}.circuit_info.json"
-OUTPUT_CONFIG_PATH = f'{CIRCUIT_NAME}.party_settings.json'
+MPC_SETTINGS_PATH = f'{CIRCUIT_NAME}.mpc_settings.json'
 NUM_PARTIES = 2
 NUM_INPUTS_PER_PARTY = 200
 
@@ -64,7 +64,7 @@ def main():
         for name in input_name_to_wire_index_without_consts.keys()
     }
 
-    with open(OUTPUT_CONFIG_PATH, 'w') as f:
+    with open(MPC_SETTINGS_PATH, 'w') as f:
         json.dump({
             'inputs_from': inputs_from,
             "num_parties": NUM_PARTIES,
