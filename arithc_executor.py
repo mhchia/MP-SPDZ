@@ -41,16 +41,17 @@ MAP_GATE_TYPE_TO_OPERATOR_STR = {
 }
 
 
-ARITH_CIRCUIT_NAME = 'nn_circuit_small'
+# ARITH_CIRCUIT_NAME = 'nn_circuit_small'
+
+# ARITH_CIRCUIT_NAME = 'arith_circuit_example'
+# ARITH_CIRCUIT_NAME = 'circ'
+# ARITH_CIRCUIT_NAME = 'strange'
+ARITH_CIRCUIT_NAME = 'two_outputs'
 CIRCUIT_INTERPRETER_PATH = Path(f'Programs/Source/{ARITH_CIRCUIT_NAME}.mpc')
 CIRCUIT_INTERPRETER_PATH.parent.mkdir(parents=True, exist_ok=True)
 CMD_RUN_INTERPRETER = f'Scripts/compile-run.py -E semi {ARITH_CIRCUIT_NAME} -M'
 
 # Actual arithmetic circuit to be executed by the MP-SPDZ interpreter above
-# ARITH_CIRCUIT_NAME = 'arith_circuit_example'
-# ARITH_CIRCUIT_NAME = 'circ'
-# ARITH_CIRCUIT_NAME = 'strange'
-# ARITH_CIRCUIT_NAME = 'two_outputs'
 ARITH_CIRCUIT_PATH = f"{ARITH_CIRCUIT_NAME}.txt"
 # Config file defining a input is either a constant or should be read from which party
 MPC_SETTINGS_PATH = f'{ARITH_CIRCUIT_NAME}.mpc_settings.json'
@@ -78,7 +79,7 @@ def generate_arith_circuit_interpreter(
     mpc_settings_path: str,
 ):
     '''
-    Summary: Generate the MP-SPDZ code to interpret the arithmetic circuit
+    Generate the MP-SPDZ code to interpret the arithmetic circuit
 
     Steps:
     1. Read the arithmetic circuit file to get the gates
@@ -113,7 +114,6 @@ def generate_arith_circuit_interpreter(
     # Read number of wires from the bristol circuit file
     with open(arith_circuit_path, 'r') as f:
         first_line = next(f)
-        print(f"!@# first_line={first_line}")
         num_gates, num_wires = map(int, first_line.split())
         second_line = next(f)
         num_inputs = int(second_line.split()[0])
@@ -219,7 +219,7 @@ def generate_mpspdz_inputs_for_party(
     '''
 
     # Read inputs value from user provided input files
-    input_json_for_party_path = f"{ARITH_CIRCUIT_NAME}_{party}.input.json"
+    input_json_for_party_path = f"{ARITH_CIRCUIT_NAME}_party_{party}.inputs.json"
     with open(input_json_for_party_path) as f:
         input_values_for_party_json = json.load(f)
 

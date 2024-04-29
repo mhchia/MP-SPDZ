@@ -21,9 +21,9 @@
 
 import json
 
-CIRCUIT_NAME = "nn_circuit_small"
+# CIRCUIT_NAME = "nn_circuit_small"
 # CIRCUIT_NAME = "strange"
-# CIRCUIT_NAME = "two_outputs"
+CIRCUIT_NAME = "two_outputs"
 CIRCUIT_INFO_PATH = f"{CIRCUIT_NAME}.circuit_info.json"
 MPC_SETTINGS_PATH = f'{CIRCUIT_NAME}.mpc_settings.json'
 NUM_PARTIES = 2
@@ -59,10 +59,12 @@ def main():
     # inputs_from[str(0)] = list(input_name_to_wire_index_without_consts.keys())
     # for i in range(1, NUM_PARTIES):
     #     inputs_from[str(i)] = []
-    inputs_from = {
-        name: 0
-        for name in input_name_to_wire_index_without_consts.keys()
-    }
+    all_inputs = list(input_name_to_wire_index_without_consts.keys())
+    inputs_of_parties = [all_inputs[:-1], all_inputs[-1:]]
+    inputs_from = {}
+    for i in range(NUM_PARTIES):
+        for input_name in inputs_of_parties[i]:
+            inputs_from[input_name] = i
 
     with open(MPC_SETTINGS_PATH, 'w') as f:
         json.dump({
@@ -71,17 +73,17 @@ def main():
         }, f, indent=4)
 
     num_inputs = len(input_name_to_wire_index)
+    input_values = iter(range(1, num_inputs + 1))
 
     def get_input_json_path(party):
-        return f"{CIRCUIT_NAME}_{party}.input.json"
+        return f"{CIRCUIT_NAME}_party_{party}.inputs.json"
 
-    with open(get_input_json_path(0), 'w') as f:
-        json.dump({
-            input_name: value
-            for input_name, value in zip(input_name_to_wire_index.keys(), range(num_inputs))
-        }, f, indent=4)
-    with open(get_input_json_path(1), 'w') as f:
-        json.dump({}, f, indent=4)
+    for i in range(NUM_PARTIES):
+        with open(get_input_json_path(i), 'w') as f:
+            json.dump({
+                input_name: next(input_values)
+                for input_name in inputs_of_parties[i]
+            }, f, indent=4)
 
     # # generate inputs in wire order
     # # sort wire names with its index

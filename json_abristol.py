@@ -5,9 +5,9 @@ import json
 # dirname = os.path.dirname(arithc_json_path)
 # filename = os.path.basename(arithc_json_path)
 # circuit_name = ".".join(filename.split('.')[:-1])
-circuit_name = "nn_circuit_small"
+# circuit_name = "nn_circuit_small"
 # circuit_name = "strange"
-# circuit_name = "two_outputs"
+circuit_name = "two_outputs"
 
 input_filepath = f"{circuit_name}.json"
 output_filepath = f"{circuit_name}.txt"

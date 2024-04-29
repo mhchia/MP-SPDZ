@@ -1,0 +1,6 @@
+wires = [sint.get_input_from(1), sint.get_input_from(0), cint(3), None, None]
+wires[3] = wires[1] + wires[0]
+wires[4] = wires[1] * wires[2]
+# Print outputs
+print_ln('outputs[0]: a_add_b=%s', wires[3].reveal())
+print_ln('outputs[1]: a_mul_c=%s', wires[4].reveal())
