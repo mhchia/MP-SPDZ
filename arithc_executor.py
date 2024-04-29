@@ -26,26 +26,7 @@ class Gate:
     inputs_wires: list[int]
     output_wire: int
 
-# if gate_type == AGateType.ADD:
-#     wires[int(line[4])] = ins[0] + ins[1]
-# elif gate_type == AGateType.MUL:
-#     wires[int(line[4])] = ins[0] * ins[1]
-# elif gate_type == AGateType.DIV:
-#     wires[int(line[4])] = ins[0] / ins[1]
-# elif gate_type == AGateType.LT:
-#     wires[int(line[4])] = ins[0] < ins[1]
-# elif gate_type == AGateType.SUB:
-#     wires[int(line[4])] = ins[0] - ins[1]
-# elif gate_type == AGateType.EQ:
-#     wires[int(line[4])] = ins[0] == ins[1]
-# elif gate_type == AGateType.NEQ:
-#     wires[int(line[4])] = ins[0] != ins[1]
-# elif gate_type == AGateType.GT:
-#     wires[int(line[4])] = ins[0] > ins[1]
-# elif gate_type == AGateType.GEQ:
-#     wires[int(line[4])] = ins[0] >= ins[1]
-# elif gate_type == AGateType.LEQ:
-#     wires[int(line[4])] = ins[0] <= ins[1]
+
 MAP_GATE_TYPE_TO_OPERATOR_STR = {
     AGateType.ADD: '+',
     AGateType.MUL: '*',
@@ -73,7 +54,7 @@ ARITH_CIRCUIT_NAME = 'nn_circuit_small'
 # ARITH_CIRCUIT_NAME = 'two_outputs'
 ARITH_CIRCUIT_PATH = f"{ARITH_CIRCUIT_NAME}.txt"
 # Config file defining a input is either a constant or should be read from which party
-INPUT_CONFIG_PATH = f'Configs/{ARITH_CIRCUIT_NAME}.json'
+INPUT_CONFIG_PATH = f'{ARITH_CIRCUIT_NAME}.party_settings.json'
 CIRCUIT_INFO_PATH = f"{ARITH_CIRCUIT_NAME}.circuit_info.json"
 WIRE_ID_FOR_INPUT_PATH = f"{ARITH_CIRCUIT_NAME}.wire_id_for_inputs.json"
 
@@ -94,6 +75,18 @@ def generate_arith_circuit_interpreter(
     circuit_info_path: str,
     input_config_path: str,
 ):
+    '''
+    Summary: Generate the MP-SPDZ code to interpret the arithmetic circuit
+
+    Steps:
+    1. Read the arithmetic circuit file to get the gates
+    2. Read the circuit info file to get the input/output wire mapping
+    3. Read the input config file to get which party inputs should be read from
+    4. Generate the MP-SPDZ from the inputs above. The code should:
+        4.1. Initialize a `wires` list with input wires filled in: if a wire is a constant, fill it in directly. if a wire is an input, fill in which party this input comes from
+        4.2. Translate the gates into corresponding operations in MP-SPDZ
+        4.3. Print the outputs
+    '''
     # {
     #   "input_name_to_wire_index": { "a": 1, "b": 0, "c": 2},
     #   "constants": {"d": {"value": 50, "wire_index": 3}},
@@ -106,13 +99,6 @@ def generate_arith_circuit_interpreter(
     constants: dict[str, dict[str, int]] = raw['constants']
     output_name_to_wire_index = {k: int(v) for k, v in raw['output_name_to_wire_index'].items()}
     # {
-    #     "inputs_from": {
-    #         "0": ["a", "b"],
-    #         "1": ["c"]
-    #     }
-    # }
-    #
-    # {
     #   "inputs_from": {
     #     "a": 0,
     #     "b": 1,
@@ -121,6 +107,7 @@ def generate_arith_circuit_interpreter(
     with open(input_config_path, 'r') as f:
         input_config = json.load(f)
     inputs_from: dict[str, int] = input_config['inputs_from']
+    num_parties = int(input_config['num_parties'])
 
     # Read number of wires from the bristol circuit file
     with open(arith_circuit_path, 'r') as f:
@@ -178,7 +165,11 @@ def generate_arith_circuit_interpreter(
     #
     inputs_str = '[' + ', '.join(inputs_str_list) + ']'
 
-    # Translate bristol gates to MP-SPDZ gates
+    # Translate bristol gates to MP-SPDZ operations
+    # E.g.
+    # '2 1 1 0 2 AAdd' in bristol
+    #   is translated to
+    # 'wires[2] = wires[1] + wires[0]' in MP-SPDZ
     gates_str_list = []
     for gate in gates:
         gate_str = ''
@@ -186,11 +177,9 @@ def generate_arith_circuit_interpreter(
             raise ValueError(f"Gate type {gate.gate_type} is not supported")
         else:
             operator_str = MAP_GATE_TYPE_TO_OPERATOR_STR[gate.gate_type]
-            # gate_str = f'inputs[{gate.output}] = {operator_str.join([f"inputs[{i}]" for i in gate.inputs])}'
             gate_str = f'wires[{gate.output_wire}] = wires[{gate.inputs_wires[0]}] {operator_str} wires[{gate.inputs_wires[1]}]'
         gates_str_list.append(gate_str)
     gates_str = '\n'.join(gates_str_list)
-
 
     # For outputs, should print the actual output names, and
     # lines are ordered by actual output wire index since it's guaranteed the order
@@ -208,16 +197,15 @@ def generate_arith_circuit_interpreter(
 # Print outputs
 {print_outputs_str}
 """
+    print("!@# circuit=", circuit)
 
-    # Convert inputs to wire inputs
-    NUM_PARTIES = 2
+    # Generate inputs for MP-SPDZ
     # FIXME: Should be separate for each party
     # Read inputs value from user provided input files
-    from pathlib import Path
     arithc_inputs = Path("Player-Data") / "arithc"
     arithc_inputs.mkdir(parents=True, exist_ok=True)
     inputs_from_parties = {}
-    for i in range(NUM_PARTIES):
+    for i in range(num_parties):
         with open(arithc_inputs / f"Input-P{i}-0") as f:
             inputs_from_parties[i] = json.load(f)
     # Merge all inputs values
@@ -225,17 +213,28 @@ def generate_arith_circuit_interpreter(
     for party, inputs in inputs_from_parties.items():
         inputs_value.update(inputs)
 
+    #
+    # Generate inputs for MP-SPDZ circuit
+    #
+    # - The input file for circom mpc is defined as `{"input_name_0": input_value_0, "input_name_1": input_value_1, ... "input_name_N": input_value_N}`
+    # - The actual wire list in the MP-SPDZ looks like
+    #   `[cint(123), sint.read_from_party(0), sint.read_from_party(1), cint(456), sint.read_from_party(0)]`
+    # - In MP-SPDZ, input file is a text file in the format of `input0 input1 input2 ... inputN`, each separated with a space
+    # - For a party, we need to generate an input file for MP-SPDZ according to the wire order of their inputs
+    #   - Continued with the example above, for party 0, its MP-SPDZ input file should be `input1 input4`
+    #   - This order can be obtained by sorting the `input_name_to_wire_index` by the wire index
+    #
     # generate inputs in wire order
     wire_to_name_sorted = sorted(input_name_to_wire_index.items(), key=lambda x: x[1])
     wire_value_in_order_for_mpsdz = {
-        i: [] for i in range(NUM_PARTIES)
+        i: [] for i in range(num_parties)
     }
     for wire_name, wire_index in wire_to_name_sorted:
         wire_from_party = inputs_from[wire_name]
         wire_value = inputs_value[wire_name]
         wire_value_in_order_for_mpsdz[wire_from_party].append(wire_value)
     # Write these ordered wire inputs for mp-spdz usage
-    for i in range(NUM_PARTIES):
+    for i in range(num_parties):
         input_file_path_for_party = f"Player-Data/Input-P{i}-0"
         with open(input_file_path_for_party, 'w') as f:
             f.write(" ".join(map(str, wire_value_in_order_for_mpsdz[i])))
