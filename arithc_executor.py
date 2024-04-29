@@ -17,16 +17,6 @@ class AGateType(Enum):
     SUB = 'ASub'
 
 
-# Each gate line looks like this: '2 1 26 25 35 AAdd'
-@dataclass(frozen=True)
-class Gate:
-    num_inputs: int
-    num_outputs: int
-    gate_type: AGateType
-    inputs_wires: list[int]
-    output_wire: int
-
-
 MAP_GATE_TYPE_TO_OPERATOR_STR = {
     AGateType.ADD: '+',
     AGateType.MUL: '*',
@@ -47,8 +37,8 @@ MAP_GATE_TYPE_TO_OPERATOR_STR = {
 # ARITH_CIRCUIT_NAME = 'circ'
 # ARITH_CIRCUIT_NAME = 'strange'
 ARITH_CIRCUIT_NAME = 'two_outputs'
-CIRCUIT_INTERPRETER_PATH = Path(f'Programs/Source/{ARITH_CIRCUIT_NAME}.mpc')
-CIRCUIT_INTERPRETER_PATH.parent.mkdir(parents=True, exist_ok=True)
+GENERATED_MPSPDZ_CIRCUIT_PATH = Path(f'Programs') / 'Source' / f'{ARITH_CIRCUIT_NAME}.mpc'
+GENERATED_MPSPDZ_CIRCUIT_PATH.parent.mkdir(parents=True, exist_ok=True)
 CMD_RUN_INTERPRETER = f'Scripts/compile-run.py -E semi {ARITH_CIRCUIT_NAME} -M'
 
 # Actual arithmetic circuit to be executed by the MP-SPDZ interpreter above
@@ -56,16 +46,12 @@ ARITH_CIRCUIT_PATH = f"{ARITH_CIRCUIT_NAME}.txt"
 # Config file defining a input is either a constant or should be read from which party
 MPC_SETTINGS_PATH = f'{ARITH_CIRCUIT_NAME}.mpc_settings.json'
 CIRCUIT_INFO_PATH = f"{ARITH_CIRCUIT_NAME}.circuit_info.json"
-WIRE_ID_FOR_INPUT_PATH = f"{ARITH_CIRCUIT_NAME}.wire_id_for_inputs.json"
-ARITHC_INPUTS_JSON_DIR = Path("Player-Data") / "arithc"
 
 
 def main():
     # Generate MP-SPDZ circuit to interpret the  and write to file
     # TODO: MPC_SETTINGS_PATH should be an argument to the script
-    interpreter_code = generate_mpspdz_circuit(ARITH_CIRCUIT_PATH, CIRCUIT_INFO_PATH, MPC_SETTINGS_PATH)
-    with open(CIRCUIT_INTERPRETER_PATH, 'w') as f:
-        f.write(interpreter_code)
+    generate_mpspdz_circuit(ARITH_CIRCUIT_PATH, CIRCUIT_INFO_PATH, MPC_SETTINGS_PATH)
 
     generate_mpspdz_inputs(CIRCUIT_INFO_PATH, MPC_SETTINGS_PATH)
 
@@ -79,7 +65,7 @@ def generate_mpspdz_circuit(
     mpc_settings_path: str,
 ):
     '''
-    Generate the MP-SPDZ code to interpret the arithmetic circuit.
+    Generate the MP-SPDZ circuit code that can be run by MP-SPDZ.
 
     Steps:
     1. Read the arithmetic circuit file to get the gates
@@ -112,6 +98,23 @@ def generate_mpspdz_circuit(
     inputs_from: dict[str, int] = input_config['inputs_from']
 
     # Read number of wires from the bristol circuit file
+    # A bristol circuit file looks like this:
+    # 2 5
+    # 3 1 1 1
+    # 2 1 1
+    #
+    # 2 1 1 0 3 AAdd
+    # 2 1 1 2 4 AMul
+    # """
+
+    # Each gate line looks like this: '2 1 1 0 3 AAdd'
+    @dataclass(frozen=True)
+    class Gate:
+        num_inputs: int
+        num_outputs: int
+        gate_type: AGateType
+        inputs_wires: list[int]
+        output_wire: int
     with open(arith_circuit_path, 'r') as f:
         first_line = next(f)
         num_gates, num_wires = map(int, first_line.split())
@@ -193,12 +196,14 @@ def generate_mpspdz_circuit(
     ]
     print_outputs_str = '\n'.join(print_outputs_str_list)
 
-    circuit = f"""wires = {inputs_str}
+    circuit_code = f"""wires = {inputs_str}
 {gates_str}
 # Print outputs
 {print_outputs_str}
 """
-    return circuit
+    with open(GENERATED_MPSPDZ_CIRCUIT_PATH, 'w') as f:
+        f.write(circuit_code)
+    return circuit_code
 
 
 def generate_mpspdz_inputs_for_party(
