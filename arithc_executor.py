@@ -49,13 +49,10 @@ CIRCUIT_INFO_PATH = f"{ARITH_CIRCUIT_NAME}.circuit_info.json"
 
 
 def main():
-    # Generate MP-SPDZ circuit to interpret the  and write to file
     # TODO: MPC_SETTINGS_PATH should be an argument to the script
     generate_mpspdz_circuit(ARITH_CIRCUIT_PATH, CIRCUIT_INFO_PATH, MPC_SETTINGS_PATH)
-
     generate_mpspdz_inputs(CIRCUIT_INFO_PATH, MPC_SETTINGS_PATH)
-
-    # Run the MP-SPDZ interpreter to interpret the arithmetic circuit
+    # Compile and run the MP-SPDZ circuit
     os.system(CMD_RUN_INTERPRETER)
 
 
@@ -203,7 +200,6 @@ def generate_mpspdz_circuit(
 """
     with open(GENERATED_MPSPDZ_CIRCUIT_PATH, 'w') as f:
         f.write(circuit_code)
-    return circuit_code
 
 
 def generate_mpspdz_inputs_for_party(
