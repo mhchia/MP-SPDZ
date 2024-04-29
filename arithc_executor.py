@@ -41,15 +41,14 @@ MAP_GATE_TYPE_TO_OPERATOR_STR = {
 }
 
 
-CIRCUIT_NAME = 'arith_circuit_interpreter'
-CIRCUIT_INTERPRETER_PATH = Path(f'Programs/Source/{CIRCUIT_NAME}.mpc')
+ARITH_CIRCUIT_NAME = 'nn_circuit_small'
+CIRCUIT_INTERPRETER_PATH = Path(f'Programs/Source/{ARITH_CIRCUIT_NAME}.mpc')
 CIRCUIT_INTERPRETER_PATH.parent.mkdir(parents=True, exist_ok=True)
-CMD_RUN_INTERPRETER = f'Scripts/compile-run.py -E semi {CIRCUIT_NAME} -M'
+CMD_RUN_INTERPRETER = f'Scripts/compile-run.py -E semi {ARITH_CIRCUIT_NAME} -M'
 
 # Actual arithmetic circuit to be executed by the MP-SPDZ interpreter above
 # ARITH_CIRCUIT_NAME = 'arith_circuit_example'
 # ARITH_CIRCUIT_NAME = 'circ'
-ARITH_CIRCUIT_NAME = 'nn_circuit_small'
 # ARITH_CIRCUIT_NAME = 'strange'
 # ARITH_CIRCUIT_NAME = 'two_outputs'
 ARITH_CIRCUIT_PATH = f"{ARITH_CIRCUIT_NAME}.txt"
@@ -57,6 +56,7 @@ ARITH_CIRCUIT_PATH = f"{ARITH_CIRCUIT_NAME}.txt"
 MPC_SETTINGS_PATH = f'{ARITH_CIRCUIT_NAME}.mpc_settings.json'
 CIRCUIT_INFO_PATH = f"{ARITH_CIRCUIT_NAME}.circuit_info.json"
 WIRE_ID_FOR_INPUT_PATH = f"{ARITH_CIRCUIT_NAME}.wire_id_for_inputs.json"
+ARITHC_INPUTS_JSON_DIR = Path("Player-Data") / "arithc"
 
 
 def main():
@@ -219,9 +219,8 @@ def generate_mpspdz_inputs_for_party(
     '''
 
     # Read inputs value from user provided input files
-    arithc_inputs = Path("Player-Data") / "arithc"
-    arithc_inputs.mkdir(parents=True, exist_ok=True)
-    with open(arithc_inputs / f"Input-P{party}-0") as f:
+    input_json_for_party_path = f"{ARITH_CIRCUIT_NAME}_{party}.input.json"
+    with open(input_json_for_party_path) as f:
         input_values_for_party_json = json.load(f)
 
     with open(mpc_settings_path, 'r') as f:
