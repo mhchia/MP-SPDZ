@@ -63,7 +63,7 @@ ARITHC_INPUTS_JSON_DIR = Path("Player-Data") / "arithc"
 def main():
     # Generate MP-SPDZ circuit to interpret the  and write to file
     # TODO: MPC_SETTINGS_PATH should be an argument to the script
-    interpreter_code = generate_arith_circuit_interpreter(ARITH_CIRCUIT_PATH, CIRCUIT_INFO_PATH, MPC_SETTINGS_PATH)
+    interpreter_code = generate_mpspdz_circuit(ARITH_CIRCUIT_PATH, CIRCUIT_INFO_PATH, MPC_SETTINGS_PATH)
     with open(CIRCUIT_INTERPRETER_PATH, 'w') as f:
         f.write(interpreter_code)
 
@@ -73,13 +73,13 @@ def main():
     os.system(CMD_RUN_INTERPRETER)
 
 
-def generate_arith_circuit_interpreter(
+def generate_mpspdz_circuit(
     arith_circuit_path: str,
     circuit_info_path: str,
     mpc_settings_path: str,
 ):
     '''
-    Generate the MP-SPDZ code to interpret the arithmetic circuit
+    Generate the MP-SPDZ code to interpret the arithmetic circuit.
 
     Steps:
     1. Read the arithmetic circuit file to get the gates
@@ -207,15 +207,16 @@ def generate_mpspdz_inputs_for_party(
     mpc_settings_path: str,
 ):
     '''
-    Generate inputs for MP-SPDZ circuit
+    Generate MP-SPDZ circuit inputs for a party.
 
-    - The input file for circom mpc is defined as `{"input_name_0": input_value_0, "input_name_1": input_value_1, ... "input_name_N": input_value_N}`
-    - The actual wire list in the MP-SPDZ looks like
-      `[cint(123), sint.read_from_party(0), sint.read_from_party(1), cint(456), sint.read_from_party(0)]`
-    - In MP-SPDZ, input file is a text file in the format of `input0 input1 input2 ... inputN`, each separated with a space
-    - For a party, we need to generate an input file for MP-SPDZ according to the wire order of their inputs
-      - Continued with the example above, for party 0, its MP-SPDZ input file should be `input1 input4`
-      - This order can be obtained by sorting the `input_name_to_wire_index` by the wire index
+    For each party, we need to translate `party_{i}.inputs.json` to an input file for MP-SPDZ according to their inputs' wire order
+    - The input file format of MP-SPDZ is `input0 input1 input2 ... inputN`. Each value is separated with a space
+    - This order is determined by the position (index) of the inputs in the MP-SPDZ wires
+        - For example, the actual wires in the generated MP-SPDZ circuit might look like this:
+            `[cint(123), sint.read_from_party(0), sint.read_from_party(1), cint(456), sint.read_from_party(0), ...]`
+            - For party `0`, its MP-SPDZ inputs file should contain two values: one is for the first `sint.read_from_party(0)`
+                and the other is for the second `sint.read_from_party(0)`.
+        - This order can be obtained by sorting the `input_name_to_wire_index` by the wire index
     '''
 
     # Read inputs value from user provided input files
