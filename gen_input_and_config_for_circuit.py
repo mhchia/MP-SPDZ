@@ -41,13 +41,9 @@ def main():
         raw = json.load(f)
 
     input_name_to_wire_index = {k: int(v) for k, v in raw['input_name_to_wire_index'].items()}
-    constants = raw['constants'].items()
-    input_name_to_wire_index_without_consts = {
-        k: v for k, v in input_name_to_wire_index.items() if k not in constants
-    }
-
-    len_inputs_required = len(input_name_to_wire_index_without_consts)
-    assert NUM_INPUTS_PER_PARTY > len_inputs_required
+    input_names = list(input_name_to_wire_index.keys())
+    output_names = list(raw['output_name_to_wire_index'].keys())
+    assert NUM_INPUTS_PER_PARTY > len(input_names)
 
     # Generate the output config file
     # E.g.
@@ -59,72 +55,52 @@ def main():
     # inputs_from[str(0)] = list(input_name_to_wire_index_without_consts.keys())
     # for i in range(1, NUM_PARTIES):
     #     inputs_from[str(i)] = []
-    all_inputs = list(input_name_to_wire_index_without_consts.keys())
-    inputs_of_parties = [all_inputs[:-1], all_inputs[-1:]]
-    inputs_from = {}
-    for i in range(NUM_PARTIES):
-        for input_name in inputs_of_parties[i]:
-            inputs_from[input_name] = i
-
+    # party 0 is alice, having input a, and output a_add_b, a_mul_c are revealed to
+    # party 1 is bob, having input b, and output a_add_b, a_mul_c are revealed to
+    # [
+    #     {
+    #         "name": "alice",
+    #         "inputs": ["a"],
+    #         "outputs": ["a_add_b", "a_mul_c"]
+    #     },
+    #     {
+    #         "name": "bob",
+    #         "inputs": ["b"],
+    #         "outputs": ["a_add_b", "a_mul_c"]
+    #     }
+    # ]
     with open(MPC_SETTINGS_PATH, 'w') as f:
-        json.dump({
-            'inputs_from': inputs_from,
-            "num_parties": NUM_PARTIES,
-        }, f, indent=4)
+        json.dump([
+            {
+                "name": "alice",
+                "inputs": input_names,  # All inputs are from party 0
+                "outputs": output_names,  # Party 0 can see all outputs
+            },
+            {
+                "name": "bob",
+                "inputs": [],  # No input is from party 1
+                "outputs": output_names,  # Party 1 can see all outputs
+            }
+        ], f, indent=4)
 
-    num_inputs = len(input_name_to_wire_index)
+    num_inputs = len(input_names)
+    # Generate inputs:
     input_values = iter(range(1, num_inputs + 1))
 
     def get_input_json_path(party):
         return f"{CIRCUIT_NAME}_party_{party}.inputs.json"
 
-    for i in range(NUM_PARTIES):
-        with open(get_input_json_path(i), 'w') as f:
-            json.dump({
-                input_name: next(input_values)
-                for input_name in inputs_of_parties[i]
-            }, f, indent=4)
+    # Party 0 provides all inputs
+    with open(get_input_json_path(0), 'w') as f:
+        json.dump({
+            input_name: next(input_values)
+            for input_name in input_names
+        }, f, indent=4)
 
-    # # generate inputs in wire order
-    # # sort wire names with its index
-    # wire_to_name_sorted = sorted(input_name_to_wire_index.items(), key=lambda x: x[1])
-    # print(f"!@# wire_to_name_sorted={wire_to_name_sorted}")
-    # wire_value_in_order_for_mpsdz = {
-    #     i: [] for i in range(NUM_PARTIES)
-    # }
-    # for wire_name, wire_index in wire_to_name_sorted:
-    #     wire_from_party = inputs_from[wire_name]
-    #     wire_value = inputs_value[wire_name]
-    #     wire_value_in_order_for_mpsdz[wire_from_party].append(wire_value)
+    # Party 1 provides no inputs
+    with open(get_input_json_path(1), 'w') as f:
+        json.dump({}, f, indent=4)
 
-    # for i in range(NUM_PARTIES):
-    #     input_file_path_for_party = f"Player-Data/Input-P{i}-0"
-    #     with open(input_file_path_for_party, 'w') as f:
-    #         f.write(" ".join(map(str, wire_value_in_order_for_mpsdz[i])))
-
-    # # Generate real inputs for the circuit
-    # #   input_file_for_party_i = "Player-Data/Input-P0-0"
-    # actual_inputs = {}
-    # for i in range(NUM_PARTIES):
-    #     input_file_path_for_party = f"Player-Data/Input-P{i}-0"
-    #     actual_inputs[i] = list(range(i * NUM_INPUTS_PER_PARTY, (i + 1) * NUM_INPUTS_PER_PARTY))
-    #     with open(input_file_path_for_party, 'w') as f:
-    #         f.write(" ".join(map(str, actual_inputs[i])))
-
-    # print("!@# actual_inputs=", actual_inputs)
-    # print("!@# input_from=", inputs_from)
-
-    # # Order:
-    # #   - "w0[0][0]",
-    # #   - "in[0]",
-    # #   - "w0[0][1]",
-    # #   - "in[1]",
-    # # Assign values to each inputs
-    # # inputs_from: {"0": ["a", "b"], "1": c}
-    # wire_to_name_sorted = sorted(input_name_to_wire_index.items(), key=lambda x: x[1])
-    # # wire_value_in_order_for_mpsdz = {
-    # #     i: [] for i in range(NUM_PARTIES)
-    # # }
 
 
 if __name__ == "__main__":

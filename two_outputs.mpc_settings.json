@@ -1,7 +1,21 @@
-{
-    "inputs_from": {
-        "a": 0,
-        "b": 1
+[
+    {
+        "name": "alice",
+        "inputs": [
+            "a",
+            "b"
+        ],
+        "outputs": [
+            "a_add_b",
+            "a_mul_c"
+        ]
     },
-    "num_parties": 2
-}
+    {
+        "name": "bob",
+        "inputs": [],
+        "outputs": [
+            "a_add_b",
+            "a_mul_c"
+        ]
+    }
+]

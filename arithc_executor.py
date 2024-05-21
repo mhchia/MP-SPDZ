@@ -84,15 +84,20 @@ def generate_mpspdz_circuit(
     input_name_to_wire_index = {k: int(v) for k, v in raw['input_name_to_wire_index'].items()}
     constants: dict[str, dict[str, int]] = raw['constants']
     output_name_to_wire_index = {k: int(v) for k, v in raw['output_name_to_wire_index'].items()}
-    # {
-    #   "inputs_from": {
-    #     "a": 0,
-    #     "b": 1,
-    #   }
-    # }
+    # [
+    #     {
+    #         "name": "alice",
+    #         "inputs": ["a"],
+    #         "outputs": ["a_add_b", "a_mul_c"]
+    #     },
+    #     {
+    #         "name": "bob",
+    #         "inputs": ["b"],
+    #         "outputs": ["a_add_b", "a_mul_c"]
+    #     }
+    # ]
     with open(mpc_settings_path, 'r') as f:
-        input_config = json.load(f)
-    inputs_from: dict[str, int] = input_config['inputs_from']
+        mpc_settings = json.load(f)
 
     # Read number of wires from the bristol circuit file
     # A bristol circuit file looks like this:
@@ -142,21 +147,31 @@ def generate_mpspdz_circuit(
     # Make inputs to circuit (not wires!!) from the user config
     # Initialize a list `inputs` with `num_wires` with value=None
     inputs_str_list = [None] * num_wires
+    print_outputs_str_list = []
     # Fill in the constants
     for name, o in constants.items():
         value = int(o['value'])
+        # descaled_value = value / (10 ** scale)
         wire_index = int(o['wire_index'])
         # Sanity check
         if inputs_str_list[wire_index] is not None:
             raise ValueError(f"Wire index {wire_index} is already filled in: {inputs_str_list[wire_index]=}")
-        inputs_str_list[wire_index] = f'cint({value})'
-    # Fill in the inputs from the parties
-    for name, party in inputs_from.items():
-        wire_index = int(input_name_to_wire_index[name])
-        # Sanity check
-        if inputs_str_list[wire_index] is not None:
-            raise ValueError(f"Wire index {wire_index} is already filled in: {inputs_str_list[wire_index]=}")
-        inputs_str_list[wire_index] = f'sint.get_input_from({party})'
+        inputs_str_list[wire_index] = f'cfix({value})'
+    for party_index, party_settings in enumerate(mpc_settings):
+        # Fill in the inputs from the parties
+        for input_name in party_settings['inputs']:
+            wire_index = int(input_name_to_wire_index[input_name])
+            # Sanity check
+            if inputs_str_list[wire_index] is not None:
+                raise ValueError(f"Wire index {wire_index} is already filled in: {inputs_str_list[wire_index]=}")
+            inputs_str_list[wire_index] = f'sfix.get_input_from({party_index})'
+        # Fill in the outputs
+        for output_name in party_settings['outputs']:
+            wire_index = int(output_name_to_wire_index[output_name])
+            print_outputs_str_list.append(
+                f"print_ln_to({party_index}, 'outputs[{len(print_outputs_str_list)}]: {output_name}=%s', wires[{wire_index}].reveal_to({party_index}))"
+            )
+
 
     # Replace all `None` with str `'None'`
     inputs_str_list = [x if x is not None else 'None' for x in inputs_str_list]
@@ -182,15 +197,6 @@ def generate_mpspdz_circuit(
         gates_str_list.append(gate_str)
     gates_str = '\n'.join(gates_str_list)
 
-    # For outputs, should print the actual output names, and
-    # lines are ordered by actual output wire index since it's guaranteed the order
-    # E.g.
-    # print_ln('outputs[0]: a_add_b=%s', outputs[0].reveal())
-    # print_ln('outputs[1]: a_mul_c=%s', outputs[1].reveal())
-    print_outputs_str_list = [
-        f"print_ln('outputs[{i}]: {output_name}=%s', wires[{output_name_to_wire_index[output_name]}].reveal())"
-        for i, output_name in enumerate(output_name_to_wire_index.keys())
-    ]
     print_outputs_str = '\n'.join(print_outputs_str_list)
 
     circuit_code = f"""wires = {inputs_str}
@@ -214,9 +220,9 @@ def generate_mpspdz_inputs_for_party(
     - The input file format of MP-SPDZ is `input0 input1 input2 ... inputN`. Each value is separated with a space
     - This order is determined by the position (index) of the inputs in the MP-SPDZ wires
         - For example, the actual wires in the generated MP-SPDZ circuit might look like this:
-            `[cint(123), sint.read_from_party(0), sint.read_from_party(1), cint(456), sint.read_from_party(0), ...]`
-            - For party `0`, its MP-SPDZ inputs file should contain two values: one is for the first `sint.read_from_party(0)`
-                and the other is for the second `sint.read_from_party(0)`.
+            `[cfix(123), sfix.get_input_from(0), sfix.get_input_from(1), cfix(456), sfix.get_input_from(0), ...]`
+            - For party `0`, its MP-SPDZ inputs file should contain two values: one is for the first `sfix.get_input_from(0)`
+                and the other is for the second `sfix.get_input_from(0)`.
         - This order can be obtained by sorting the `input_name_to_wire_index` by the wire index
     '''
 
@@ -226,8 +232,12 @@ def generate_mpspdz_inputs_for_party(
         input_values_for_party_json = json.load(f)
 
     with open(mpc_settings_path, 'r') as f:
-        input_config = json.load(f)
-    inputs_from: dict[str, int] = input_config['inputs_from']
+        mpc_settings = json.load(f)
+    inputs_from: dict[str, int] = {}
+    for party_index, party_settings in enumerate(mpc_settings):
+        for input_name in party_settings['inputs']:
+            inputs_from[input_name] = int(party_index)
+
     with open(circuit_info_path, 'r') as f:
         circuit_info = json.load(f)
         input_name_to_wire_index = circuit_info['input_name_to_wire_index']
@@ -254,9 +264,8 @@ def generate_mpspdz_inputs(circuit_info_path: str, mpc_settings_path: str):
     `generate_mpspdz_inputs_for_party` function.
     """
     with open(mpc_settings_path, 'r') as f:
-        input_config = json.load(f)
-    num_parties = int(input_config['num_parties'])
-    for party in range(num_parties):
+        mpc_settings = json.load(f)
+    for party, _ in enumerate(mpc_settings):
         generate_mpspdz_inputs_for_party(party, circuit_info_path, mpc_settings_path)
 
 
