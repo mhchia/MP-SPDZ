@@ -156,7 +156,7 @@ def generate_mpspdz_circuit(
         # Sanity check
         if inputs_str_list[wire_index] is not None:
             raise ValueError(f"Wire index {wire_index} is already filled in: {inputs_str_list[wire_index]=}")
-        inputs_str_list[wire_index] = f'cfix({value})'
+        inputs_str_list[wire_index] = f'cint({value})'
     for party_index, party_settings in enumerate(mpc_settings):
         # Fill in the inputs from the parties
         for input_name in party_settings['inputs']:
@@ -164,7 +164,7 @@ def generate_mpspdz_circuit(
             # Sanity check
             if inputs_str_list[wire_index] is not None:
                 raise ValueError(f"Wire index {wire_index} is already filled in: {inputs_str_list[wire_index]=}")
-            inputs_str_list[wire_index] = f'sfix.get_input_from({party_index})'
+            inputs_str_list[wire_index] = f'sint.get_input_from({party_index})'
         # Fill in the outputs
         for output_name in party_settings['outputs']:
             wire_index = int(output_name_to_wire_index[output_name])
