@@ -17,6 +17,29 @@ import itertools
 from enum import Enum
 import json
 
+# AAdd,
+# ADiv,
+# AEq,
+# AGEq,
+# AGt,
+# ALEq,
+# ALt,
+# AMul,
+# ANeq,
+# ASub,
+# AXor,
+# APow,
+# AIntDiv,
+# AMod,
+# AShiftL,
+# AShiftR,
+# ABoolOr,
+# ABoolAnd,
+# ABitOr,
+# ABitAnd,
+
+# The following operations work as expected in the computation domain (modulo a prime or a power of two): +, -, *. / denotes a fixed-point division. Comparisons operators (==, !=, <, <=, >, >=) assume that the element in the computation domain represents a signed integer in a restricted range, see below. The same holds for abs(), shift operators (<<, >>), modulo (%), and exponentation (**). Modulo only works if the right-hand operator is a compile-time power of two.
+
 
 class AGateType(Enum):
     ADD = 'AAdd'
@@ -29,6 +52,17 @@ class AGateType(Enum):
     MUL = 'AMul'
     NEQ = 'ANeq'
     SUB = 'ASub'
+    XOR = 'AXor',
+    POW = 'APow',
+    IDIV = 'AIntDiv',
+    MOD = 'AMod',
+    SHL = 'AShiftL',
+    SHR = 'AShiftR'
+    # ,
+    # B_OR = ABoolOr,
+    # B_AND = ABoolAnd,
+    # ABitOr,
+    # ABitAnd,
 
 
 TWO_OPERANDS_GATES = (
@@ -42,6 +76,12 @@ TWO_OPERANDS_GATES = (
     AGateType.MUL,
     AGateType.NEQ,
     AGateType.SUB,
+    AGateType.XOR,
+    AGateType.POW,
+    AGateType.IDIV,
+    AGateType.MOD,
+    AGateType.SHL,
+    AGateType.SHR
 )
 
 
@@ -203,6 +243,18 @@ class Circuit:
                 elif gate_type == AGateType.LEQ:
                     wires[int(line[4])] = ins[0] <= ins[1]
                 # sanity check
+                elif gate_type == AGateType.XOR:
+                    wires[int(line[4])] = ins[0] ^ ins[1]
+                elif gate_type == AGateType.POW:
+                    wires[int(line[4])] = ins[0] ** ins[1]
+                elif gate_type == AGateType.IDIV: #DIV and IDIV the same for now
+                    wires[int(line[4])] = ins[0] / ins[1]
+                elif gate_type == AGateType.MOD:
+                    wires[int(line[4])] = ins[0] % ins[1]
+                elif gate_type == AGateType.SHL:
+                    wires[int(line[4])] = ins[0] << ins[1]
+                elif gate_type == AGateType.SHR:
+                    wires[int(line[4])] = ins[0] >> ins[1]
                 else:
                     raise Exception('should never be here')
             # elif gate_type == 'INV':

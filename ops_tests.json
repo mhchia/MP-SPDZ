@@ -1,0 +1,765 @@
+{
+    "node_count": 80,
+    "inputs": {
+        "0": "0.in1_add",
+        "16": "0.in1_geq",
+        "44": "0.in1_pow",
+        "25": "0.in2_leq",
+        "53": "0.in2_mod",
+        "29": "0.in2_mul",
+        "32": "0.in1_neq",
+        "57": "0.in2_shl",
+        "17": "0.in2_geq",
+        "48": "0.in1_idiv",
+        "4": "0.in1_div",
+        "20": "0.in1_lt",
+        "56": "0.in1_shl",
+        "12": "0.in1_gt",
+        "41": "0.in2_xor",
+        "9": "0.in2_eq",
+        "13": "0.in2_gt",
+        "60": "0.in1_shr",
+        "21": "0.in2_lt",
+        "49": "0.in2_idiv",
+        "37": "0.in2_sub",
+        "40": "0.in1_xor",
+        "45": "0.in2_pow",
+        "61": "0.in2_shr",
+        "24": "0.in1_leq",
+        "1": "0.in2_add",
+        "28": "0.in1_mul",
+        "5": "0.in2_div",
+        "33": "0.in2_neq",
+        "8": "0.in1_eq",
+        "36": "0.in1_sub",
+        "52": "0.in1_mod"
+    },
+    "outputs": {
+        "46": "0.out_pow",
+        "58": "0.out_shl",
+        "6": "0.out_div",
+        "22": "0.out_lt",
+        "42": "0.out_xor",
+        "50": "0.out_idiv",
+        "2": "0.out_add",
+        "54": "0.out_mod",
+        "10": "0.out_eq",
+        "62": "0.out_shr",
+        "34": "0.out_neq",
+        "38": "0.out_sub",
+        "18": "0.out_geq",
+        "26": "0.out_leq",
+        "14": "0.out_gt",
+        "30": "0.out_mul"
+    },
+    "signals": {
+        "50": {
+            "name": "0.out_idiv",
+            "value": null
+        },
+        "58": {
+            "name": "0.out_shl",
+            "value": null
+        },
+        "20": {
+            "name": "0.in1_lt",
+            "value": null
+        },
+        "21": {
+            "name": "0.in2_lt",
+            "value": null
+        },
+        "24": {
+            "name": "0.in1_leq",
+            "value": null
+        },
+        "56": {
+            "name": "0.in1_shl",
+            "value": null
+        },
+        "60": {
+            "name": "0.in1_shr",
+            "value": null
+        },
+        "47": {
+            "name": "0.random_4196548851",
+            "value": null
+        },
+        "16": {
+            "name": "0.in1_geq",
+            "value": null
+        },
+        "52": {
+            "name": "0.in1_mod",
+            "value": null
+        },
+        "22": {
+            "name": "0.out_lt",
+            "value": null
+        },
+        "32": {
+            "name": "0.in1_neq",
+            "value": null
+        },
+        "39": {
+            "name": "0.random_3205564826",
+            "value": null
+        },
+        "38": {
+            "name": "0.out_sub",
+            "value": null
+        },
+        "45": {
+            "name": "0.in2_pow",
+            "value": null
+        },
+        "43": {
+            "name": "0.random_3608014284",
+            "value": null
+        },
+        "35": {
+            "name": "0.random_81104832",
+            "value": null
+        },
+        "5": {
+            "name": "0.in2_div",
+            "value": null
+        },
+        "36": {
+            "name": "0.in1_sub",
+            "value": null
+        },
+        "10": {
+            "name": "0.out_eq",
+            "value": null
+        },
+        "55": {
+            "name": "0.random_2299787376",
+            "value": null
+        },
+        "37": {
+            "name": "0.in2_sub",
+            "value": null
+        },
+        "27": {
+            "name": "0.random_406765840",
+            "value": null
+        },
+        "51": {
+            "name": "0.random_73555982",
+            "value": null
+        },
+        "41": {
+            "name": "0.in2_xor",
+            "value": null
+        },
+        "11": {
+            "name": "0.random_3828082997",
+            "value": null
+        },
+        "44": {
+            "name": "0.in1_pow",
+            "value": null
+        },
+        "0": {
+            "name": "0.in1_add",
+            "value": null
+        },
+        "49": {
+            "name": "0.in2_idiv",
+            "value": null
+        },
+        "42": {
+            "name": "0.out_xor",
+            "value": null
+        },
+        "17": {
+            "name": "0.in2_geq",
+            "value": null
+        },
+        "7": {
+            "name": "0.random_4050739669",
+            "value": null
+        },
+        "40": {
+            "name": "0.in1_xor",
+            "value": null
+        },
+        "2": {
+            "name": "0.out_add",
+            "value": null
+        },
+        "8": {
+            "name": "0.in1_eq",
+            "value": null
+        },
+        "28": {
+            "name": "0.in1_mul",
+            "value": null
+        },
+        "1": {
+            "name": "0.in2_add",
+            "value": null
+        },
+        "4": {
+            "name": "0.in1_div",
+            "value": null
+        },
+        "48": {
+            "name": "0.in1_idiv",
+            "value": null
+        },
+        "53": {
+            "name": "0.in2_mod",
+            "value": null
+        },
+        "19": {
+            "name": "0.random_1191800720",
+            "value": null
+        },
+        "25": {
+            "name": "0.in2_leq",
+            "value": null
+        },
+        "57": {
+            "name": "0.in2_shl",
+            "value": null
+        },
+        "29": {
+            "name": "0.in2_mul",
+            "value": null
+        },
+        "13": {
+            "name": "0.in2_gt",
+            "value": null
+        },
+        "9": {
+            "name": "0.in2_eq",
+            "value": null
+        },
+        "31": {
+            "name": "0.random_27179698",
+            "value": null
+        },
+        "15": {
+            "name": "0.random_2028524742",
+            "value": null
+        },
+        "63": {
+            "name": "0.random_3232570790",
+            "value": null
+        },
+        "3": {
+            "name": "0.random_1226241016",
+            "value": null
+        },
+        "59": {
+            "name": "0.random_3217990748",
+            "value": null
+        },
+        "61": {
+            "name": "0.in2_shr",
+            "value": null
+        },
+        "30": {
+            "name": "0.out_mul",
+            "value": null
+        },
+        "14": {
+            "name": "0.out_gt",
+            "value": null
+        },
+        "18": {
+            "name": "0.out_geq",
+            "value": null
+        },
+        "34": {
+            "name": "0.out_neq",
+            "value": null
+        },
+        "26": {
+            "name": "0.out_leq",
+            "value": null
+        },
+        "33": {
+            "name": "0.in2_neq",
+            "value": null
+        },
+        "62": {
+            "name": "0.out_shr",
+            "value": null
+        },
+        "12": {
+            "name": "0.in1_gt",
+            "value": null
+        },
+        "23": {
+            "name": "0.random_64846941",
+            "value": null
+        },
+        "6": {
+            "name": "0.out_div",
+            "value": null
+        },
+        "46": {
+            "name": "0.out_pow",
+            "value": null
+        },
+        "54": {
+            "name": "0.out_mod",
+            "value": null
+        }
+    },
+    "nodes": {
+        "65": {
+            "is_const": false,
+            "is_out": true,
+            "signals": [
+                51,
+                50
+            ]
+        },
+        "66": {
+            "is_const": false,
+            "is_out": false,
+            "signals": [
+                52
+            ]
+        },
+        "80": {
+            "is_const": false,
+            "is_out": true,
+            "signals": [
+                63,
+                62
+            ]
+        },
+        "15": {
+            "is_const": false,
+            "is_out": true,
+            "signals": [
+                11,
+                10
+            ]
+        },
+        "26": {
+            "is_const": false,
+            "is_out": false,
+            "signals": [
+                20
+            ]
+        },
+        "7": {
+            "is_const": false,
+            "is_out": false,
+            "signals": [
+                5
+            ]
+        },
+        "27": {
+            "is_const": false,
+            "is_out": false,
+            "signals": [
+                21
+            ]
+        },
+        "17": {
+            "is_const": false,
+            "is_out": false,
+            "signals": [
+                13
+            ]
+        },
+        "30": {
+            "is_const": false,
+            "is_out": true,
+            "signals": [
+                23,
+                22
+            ]
+        },
+        "31": {
+            "is_const": false,
+            "is_out": false,
+            "signals": [
+                24
+            ]
+        },
+        "32": {
+            "is_const": false,
+            "is_out": false,
+            "signals": [
+                25
+            ]
+        },
+        "36": {
+            "is_const": false,
+            "is_out": false,
+            "signals": [
+                28
+            ]
+        },
+        "62": {
+            "is_const": false,
+            "is_out": false,
+            "signals": [
+                49
+            ]
+        },
+        "11": {
+            "is_const": false,
+            "is_out": false,
+            "signals": [
+                8
+            ]
+        },
+        "70": {
+            "is_const": false,
+            "is_out": true,
+            "signals": [
+                55,
+                54
+            ]
+        },
+        "72": {
+            "is_const": false,
+            "is_out": false,
+            "signals": [
+                57
+            ]
+        },
+        "2": {
+            "is_const": false,
+            "is_out": false,
+            "signals": [
+                1
+            ]
+        },
+        "35": {
+            "is_const": false,
+            "is_out": true,
+            "signals": [
+                27,
+                26
+            ]
+        },
+        "55": {
+            "is_const": false,
+            "is_out": true,
+            "signals": [
+                43,
+                42
+            ]
+        },
+        "5": {
+            "is_const": false,
+            "is_out": true,
+            "signals": [
+                3,
+                2
+            ]
+        },
+        "67": {
+            "is_const": false,
+            "is_out": false,
+            "signals": [
+                53
+            ]
+        },
+        "37": {
+            "is_const": false,
+            "is_out": false,
+            "signals": [
+                29
+            ]
+        },
+        "76": {
+            "is_const": false,
+            "is_out": false,
+            "signals": [
+                60
+            ]
+        },
+        "1": {
+            "is_const": false,
+            "is_out": false,
+            "signals": [
+                0
+            ]
+        },
+        "77": {
+            "is_const": false,
+            "is_out": false,
+            "signals": [
+                61
+            ]
+        },
+        "12": {
+            "is_const": false,
+            "is_out": false,
+            "signals": [
+                9
+            ]
+        },
+        "51": {
+            "is_const": false,
+            "is_out": false,
+            "signals": [
+                40
+            ]
+        },
+        "61": {
+            "is_const": false,
+            "is_out": false,
+            "signals": [
+                48
+            ]
+        },
+        "75": {
+            "is_const": false,
+            "is_out": true,
+            "signals": [
+                59,
+                58
+            ]
+        },
+        "45": {
+            "is_const": false,
+            "is_out": true,
+            "signals": [
+                35,
+                34
+            ]
+        },
+        "41": {
+            "is_const": false,
+            "is_out": false,
+            "signals": [
+                32
+            ]
+        },
+        "47": {
+            "is_const": false,
+            "is_out": false,
+            "signals": [
+                37
+            ]
+        },
+        "60": {
+            "is_const": false,
+            "is_out": true,
+            "signals": [
+                47,
+                46
+            ]
+        },
+        "71": {
+            "is_const": false,
+            "is_out": false,
+            "signals": [
+                56
+            ]
+        },
+        "42": {
+            "is_const": false,
+            "is_out": false,
+            "signals": [
+                33
+            ]
+        },
+        "50": {
+            "is_const": false,
+            "is_out": true,
+            "signals": [
+                39,
+                38
+            ]
+        },
+        "20": {
+            "is_const": false,
+            "is_out": true,
+            "signals": [
+                15,
+                14
+            ]
+        },
+        "16": {
+            "is_const": false,
+            "is_out": false,
+            "signals": [
+                12
+            ]
+        },
+        "10": {
+            "is_const": false,
+            "is_out": true,
+            "signals": [
+                7,
+                6
+            ]
+        },
+        "6": {
+            "is_const": false,
+            "is_out": false,
+            "signals": [
+                4
+            ]
+        },
+        "21": {
+            "is_const": false,
+            "is_out": false,
+            "signals": [
+                16
+            ]
+        },
+        "22": {
+            "is_const": false,
+            "is_out": false,
+            "signals": [
+                17
+            ]
+        },
+        "25": {
+            "is_const": false,
+            "is_out": true,
+            "signals": [
+                19,
+                18
+            ]
+        },
+        "40": {
+            "is_const": false,
+            "is_out": true,
+            "signals": [
+                31,
+                30
+            ]
+        },
+        "46": {
+            "is_const": false,
+            "is_out": false,
+            "signals": [
+                36
+            ]
+        },
+        "52": {
+            "is_const": false,
+            "is_out": false,
+            "signals": [
+                41
+            ]
+        },
+        "56": {
+            "is_const": false,
+            "is_out": false,
+            "signals": [
+                44
+            ]
+        },
+        "57": {
+            "is_const": false,
+            "is_out": false,
+            "signals": [
+                45
+            ]
+        }
+    },
+    "gates": [
+        {
+            "op": "AAdd",
+            "lh_in": 1,
+            "rh_in": 2,
+            "out": 5
+        },
+        {
+            "op": "ADiv",
+            "lh_in": 6,
+            "rh_in": 7,
+            "out": 10
+        },
+        {
+            "op": "AEq",
+            "lh_in": 11,
+            "rh_in": 12,
+            "out": 15
+        },
+        {
+            "op": "AGt",
+            "lh_in": 16,
+            "rh_in": 17,
+            "out": 20
+        },
+        {
+            "op": "AGEq",
+            "lh_in": 21,
+            "rh_in": 22,
+            "out": 25
+        },
+        {
+            "op": "ALt",
+            "lh_in": 26,
+            "rh_in": 27,
+            "out": 30
+        },
+        {
+            "op": "ALEq",
+            "lh_in": 31,
+            "rh_in": 32,
+            "out": 35
+        },
+        {
+            "op": "AMul",
+            "lh_in": 36,
+            "rh_in": 37,
+            "out": 40
+        },
+        {
+            "op": "ANeq",
+            "lh_in": 41,
+            "rh_in": 42,
+            "out": 45
+        },
+        {
+            "op": "ASub",
+            "lh_in": 46,
+            "rh_in": 47,
+            "out": 50
+        },
+        {
+            "op": "AXor",
+            "lh_in": 51,
+            "rh_in": 52,
+            "out": 55
+        },
+        {
+            "op": "APow",
+            "lh_in": 56,
+            "rh_in": 57,
+            "out": 60
+        },
+        {
+            "op": "AIntDiv",
+            "lh_in": 61,
+            "rh_in": 62,
+            "out": 65
+        },
+        {
+            "op": "AMod",
+            "lh_in": 66,
+            "rh_in": 67,
+            "out": 70
+        },
+        {
+            "op": "AShiftL",
+            "lh_in": 71,
+            "rh_in": 72,
+            "out": 75
+        },
+        {
+            "op": "AShiftR",
+            "lh_in": 76,
+            "rh_in": 77,
+            "out": 80
+        }
+    ]
+}
