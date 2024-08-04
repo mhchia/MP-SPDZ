@@ -1,0 +1,15 @@
+from Compiler.library import print_ln
+from Compiler.types import sfix
+
+# Get age from party 0
+age_0 = sfix.get_input_from(0)
+# Get age from party 1
+age_1 = sfix.get_input_from(1)
+# Get age from party 2
+
+age_2 = sfix.get_input_from(2)
+# Calculate mean age
+output = (age_0 + age_1 + age_2) / 3
+
+# Reveal output to all parties, print to everyone's console
+print_ln("Mean age: %s", output.reveal())
